@@ -498,9 +498,19 @@ const INITIAL_SCANS: ScanLog[] = [
 const INITIAL_USERS: UserProfile[] = [
   {
     id: 'usr-1',
-    fullName: 'Admin Principal',
-    email: 'admin@jeltix.sn',
+    fullName: 'Super Administrateur',
+    email: 'admin@foutaticket.sn',
     phone: '+221 77 000 00 00',
+    role: 'SUPER_ADMIN',
+    organization: 'Jël Tix & FoutaTicket',
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'usr-admin-2',
+    fullName: 'Admin Jël Tix',
+    email: 'admin@jeltix.sn',
+    phone: '+221 77 000 00 01',
     role: 'SUPER_ADMIN',
     organization: 'Jël Tix SAS',
     isActive: true,

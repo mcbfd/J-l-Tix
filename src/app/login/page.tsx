@@ -106,13 +106,14 @@ export default function LoginPage() {
             createdAt: new Date().toISOString(),
           };
         }
-        setSuccessMsg(`Ravi de vous revoir ${activeUser.fullName} ! Redirection en cours...`);
+        setSuccessMsg(`Ravi de vous revoir ${activeUser.fullName} ! Redirection vers ${activeUser.role === 'SELLER' ? 'la Caisse' : activeUser.role === 'CONTROLLER' ? 'le Scanner' : 'le Tableau de bord'}...`);
       }
 
       // Set the active authenticated user & session cookie
       setCurrentUser(activeUser);
       if (typeof document !== 'undefined') {
         document.cookie = 'jeltix_auth_session=true; path=/; max-age=604800; SameSite=Lax';
+        localStorage.setItem('jeltix_current_user', JSON.stringify(activeUser));
       }
 
       // Redirect based on the user's role
@@ -128,8 +129,9 @@ export default function LoginPage() {
       }
 
       setTimeout(() => {
-        window.location.href = destination!;
-      }, 500);
+        router.push(destination!);
+        router.refresh();
+      }, 400);
     } catch (err: any) {
       setErrorMsg(err.message || 'Une erreur est survenue lors de l’opération.');
     } finally {
