@@ -53,15 +53,19 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/reports') ||
     pathname.startsWith('/scan');
 
-  if (isProtectedPath && !user) {
+  // Check for Supabase Auth session or application auth cookie
+  const hasAuthCookie = request.cookies.has('jeltix_auth_session');
+  const isAuthenticated = Boolean(user || hasAuthCookie);
+
+  if (isProtectedPath && !isAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
   }
 
-  // If already logged in and visiting login, redirect to dashboard or appropriate portal
-  if (pathname === '/login' && user) {
+  // If already logged in and visiting login, redirect to dashboard
+  if (pathname === '/login' && isAuthenticated && request.nextUrl.searchParams.get('logout') !== 'true') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

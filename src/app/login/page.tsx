@@ -109,8 +109,11 @@ export default function LoginPage() {
         setSuccessMsg(`Ravi de vous revoir ${activeUser.fullName} ! Redirection en cours...`);
       }
 
-      // Set the active authenticated user
+      // Set the active authenticated user & session cookie
       setCurrentUser(activeUser);
+      if (typeof document !== 'undefined') {
+        document.cookie = 'jeltix_auth_session=true; path=/; max-age=604800; SameSite=Lax';
+      }
 
       // Redirect based on the user's role
       let destination = redirectPath;
@@ -125,8 +128,8 @@ export default function LoginPage() {
       }
 
       setTimeout(() => {
-        router.push(destination!);
-      }, 600);
+        window.location.href = destination!;
+      }, 500);
     } catch (err: any) {
       setErrorMsg(err.message || 'Une erreur est survenue lors de l’opération.');
     } finally {

@@ -202,7 +202,12 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
           </div>
 
           <Link
-            href="/login"
+            href="/login?logout=true"
+            onClick={() => {
+              if (typeof document !== 'undefined') {
+                document.cookie = 'jeltix_auth_session=; path=/; max-age=0; SameSite=Lax';
+              }
+            }}
             className="w-full py-1.5 px-2 rounded-lg bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
