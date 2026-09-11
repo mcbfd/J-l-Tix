@@ -26,7 +26,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Dakar, Diamniadio',
     startDate: '2026-05-25T18:00:00Z',
     timeString: '18:00 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1200&q=80',
     description: 'La grande finale de la Coupe du Sénégal opposant les deux meilleures formations de la saison dans un stade ultra-moderne de 50 000 places. Contrôle d’accès digitalisé Jël Tix aux tourniquets.',
     importantInfo: [
       "Les portes ouvrent 3 heures avant le coup d'envoi. Prévoyez d'arriver en avance.",
@@ -84,7 +84,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Pikine, Dakar',
     startDate: '2026-06-07T16:30:00Z',
     timeString: '16:30 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
     description: 'Le choc incontournable de l’arène sénégalaise pour le titre suprême du Roi des Arènes. Ambiance mémorable, bakk des lutteurs et tambours traditionnels.',
     importantInfo: [
       "Ouverture des portes dès 12h00.",
@@ -575,7 +575,18 @@ class JeltixStore {
         const savedOrders = localStorage.getItem('jeltix_orders') || localStorage.getItem('foutaticket_orders');
         const savedCurrentUser = localStorage.getItem('jeltix_current_user');
 
-        if (savedEvents) this.events = JSON.parse(savedEvents);
+        if (savedEvents) {
+          const parsed = JSON.parse(savedEvents);
+          this.events = parsed.map((evt: any) => {
+            if (evt.bannerImage && evt.bannerImage.includes('photo-1508098682722-e99c43a406b2')) {
+              return { ...evt, bannerImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1200&q=80' };
+            }
+            if (evt.bannerImage && evt.bannerImage.includes('photo-1517649763962-0c623266ddc0')) {
+              return { ...evt, bannerImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80' };
+            }
+            return evt;
+          });
+        }
         if (savedTickets) this.tickets = JSON.parse(savedTickets);
         if (savedScans) this.scans = JSON.parse(savedScans);
         if (savedUsers) this.users = JSON.parse(savedUsers);

@@ -18,7 +18,7 @@ export default function NewEventPage() {
   const [startDate, setStartDate] = useState('');
   const [timeString, setTimeString] = useState('18:00 UTC');
   const [bannerImage, setBannerImage] = useState(
-    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80'
+    'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1200&q=80'
   );
   const [description, setDescription] = useState('');
   const [totalCapacity, setTotalCapacity] = useState(25000);
