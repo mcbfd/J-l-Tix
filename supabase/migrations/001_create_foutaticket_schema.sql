@@ -1,30 +1,39 @@
 -- ==============================================================================
--- FOUTATICKET - PostgreSQL & Supabase Database Migration
--- Architecture Anti-Fraude & Transactions Atomiques pour Billetterie & Contrôle
+-- FOUTATICKET & JËL TIX - PostgreSQL & Supabase Database Migration
+-- Script Idempotent (Exécutable plusieurs fois sans erreur)
+-- Architecture Anti-Fraude, RBAC & Procédures Atomiques
 -- ==============================================================================
 
 -- 1. Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Enumerations
-CREATE TYPE user_role AS ENUM (
-    'SUPER_ADMIN',
-    'ORGANIZER',
-    'EVENT_MANAGER',
-    'SELLER',
-    'CONTROLLER',
-    'FINANCE'
-);
-
-CREATE TYPE event_status AS ENUM ('DRAFT', 'PUBLISHED', 'CLOSED');
-CREATE TYPE ticket_status AS ENUM ('VALID', 'USED', 'CANCELLED');
-CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
-CREATE TYPE payment_method AS ENUM ('WAVE', 'ORANGE_MONEY', 'FREE_MONEY', 'CASH');
-CREATE TYPE scan_result AS ENUM ('VALID', 'ALREADY_SCANNED', 'INVALID');
-CREATE TYPE sales_channel AS ENUM ('ONLINE', 'POS_GUICHET');
+-- 2. Enumerations (Création sécurisée sans doublon)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('SUPER_ADMIN', 'ORGANIZER', 'EVENT_MANAGER', 'SELLER', 'CONTROLLER', 'FINANCE');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_status') THEN
+        CREATE TYPE event_status AS ENUM ('DRAFT', 'PUBLISHED', 'CLOSED');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticket_status') THEN
+        CREATE TYPE ticket_status AS ENUM ('VALID', 'USED', 'CANCELLED');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+        CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+        CREATE TYPE payment_method AS ENUM ('WAVE', 'ORANGE_MONEY', 'FREE_MONEY', 'CASH');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'scan_result') THEN
+        CREATE TYPE scan_result AS ENUM ('VALID', 'ALREADY_SCANNED', 'INVALID');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'sales_channel') THEN
+        CREATE TYPE sales_channel AS ENUM ('ONLINE', 'POS_GUICHET');
+    END IF;
+END $$;
 
 -- 3. Profiles Table
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
@@ -38,7 +47,7 @@ CREATE TABLE profiles (
 );
 
 -- 4. Events Table
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slug VARCHAR(255) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
@@ -57,7 +66,7 @@ CREATE TABLE events (
 );
 
 -- 5. Ticket Types Table (Categories & Pricing)
-CREATE TABLE ticket_types (
+CREATE TABLE IF NOT EXISTS ticket_types (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -71,7 +80,7 @@ CREATE TABLE ticket_types (
 );
 
 -- 6. Orders Table
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     reference VARCHAR(50) UNIQUE NOT NULL,
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE RESTRICT,
@@ -87,8 +96,8 @@ CREATE TABLE orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. Tickets Table (With strict anti-fraud constraints)
-CREATE TABLE tickets (
+-- 7. Tickets Table (Anti-fraud constraints)
+CREATE TABLE IF NOT EXISTS tickets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_code VARCHAR(50) UNIQUE NOT NULL,
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -108,11 +117,11 @@ CREATE TABLE tickets (
 );
 
 -- 8. Scans Table (Audit trail of every gate scan attempt)
-CREATE TABLE scans (
+CREATE TABLE IF NOT EXISTS scans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID REFERENCES tickets(id) ON DELETE SET NULL,
     ticket_code VARCHAR(50) NOT NULL,
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    event_id UUID REFERENCES events(id) ON DELETE CASCADE,
     gate VARCHAR(100) NOT NULL,
     controller_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     result scan_result NOT NULL,
@@ -121,7 +130,7 @@ CREATE TABLE scans (
 );
 
 -- 9. Withdrawals Table (Organizer Payouts)
-CREATE TABLE withdrawals (
+CREATE TABLE IF NOT EXISTS withdrawals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organizer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
     amount INTEGER NOT NULL CHECK (amount > 0),
@@ -133,7 +142,7 @@ CREATE TABLE withdrawals (
 );
 
 -- 10. Audit Logs Table
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
@@ -145,10 +154,9 @@ CREATE TABLE audit_logs (
 );
 
 -- ==============================================================================
--- ATOMIC STORED PROCEDURES (Anti-Double-Scan & Anti-Overbooking)
+-- ATOMIC STORED PROCEDURE (Anti-Double-Scan & Concurrency Lock)
 -- ==============================================================================
 
--- Atomic Function: Validate Ticket at Gate (Prevents Race Conditions)
 CREATE OR REPLACE FUNCTION validate_ticket_atomic(
     p_ticket_code VARCHAR(50),
     p_gate VARCHAR(100),
@@ -159,7 +167,6 @@ DECLARE
     v_ticket RECORD;
     v_result scan_result;
     v_error_msg TEXT := NULL;
-    v_response JSONB;
 BEGIN
     -- 1. Find ticket with row lock
     SELECT * INTO v_ticket 
@@ -234,7 +241,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================
 
--- Enable RLS on all sensitive tables
+-- Enable RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ticket_types ENABLE ROW LEVEL SECURITY;
@@ -243,6 +250,18 @@ ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE withdrawals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if any (to prevent duplicate policy errors)
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Public can view published events" ON events;
+DROP POLICY IF EXISTS "Organizers can manage their own events" ON events;
+DROP POLICY IF EXISTS "Public can view active ticket types" ON ticket_types;
+DROP POLICY IF EXISTS "Organizers can manage their ticket types" ON ticket_types;
+DROP POLICY IF EXISTS "Organizers can view orders for their events" ON orders;
+DROP POLICY IF EXISTS "Controllers and Organizers can view tickets" ON tickets;
+DROP POLICY IF EXISTS "Controllers can insert scans" ON scans;
+DROP POLICY IF EXISTS "Organizers and Admins can view scan history" ON scans;
 
 -- 1. Profiles Policies
 CREATE POLICY "Users can view their own profile"
@@ -315,4 +334,3 @@ USING (
         ))
     )
 );
-
