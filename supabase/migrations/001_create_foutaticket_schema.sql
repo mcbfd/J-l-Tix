@@ -229,3 +229,90 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==============================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ==============================================================================
+
+-- Enable RLS on all sensitive tables
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE withdrawals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- 1. Profiles Policies
+CREATE POLICY "Users can view their own profile"
+ON profiles FOR SELECT
+USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile"
+ON profiles FOR UPDATE
+USING (auth.uid() = id);
+
+-- 2. Events Policies
+CREATE POLICY "Public can view published events"
+ON events FOR SELECT
+USING (status = 'PUBLISHED');
+
+CREATE POLICY "Organizers can manage their own events"
+ON events FOR ALL
+USING (auth.uid() = organizer_id);
+
+-- 3. Ticket Types Policies
+CREATE POLICY "Public can view active ticket types"
+ON ticket_types FOR SELECT
+USING (is_active = TRUE);
+
+CREATE POLICY "Organizers can manage their ticket types"
+ON ticket_types FOR ALL
+USING (
+    EXISTS (
+        SELECT 1 FROM events
+        WHERE events.id = ticket_types.event_id
+        AND events.organizer_id = auth.uid()
+    )
+);
+
+-- 4. Orders Policies
+CREATE POLICY "Organizers can view orders for their events"
+ON orders FOR SELECT
+USING (
+    EXISTS (
+        SELECT 1 FROM events
+        WHERE events.id = orders.event_id
+        AND events.organizer_id = auth.uid()
+    )
+);
+
+-- 5. Tickets Policies
+CREATE POLICY "Controllers and Organizers can view tickets"
+ON tickets FOR SELECT
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.role IN ('SUPER_ADMIN', 'ORGANIZER', 'EVENT_MANAGER', 'CONTROLLER')
+    )
+);
+
+-- 6. Scans Policies
+CREATE POLICY "Controllers can insert scans"
+ON scans FOR INSERT
+WITH CHECK (auth.uid() = controller_id);
+
+CREATE POLICY "Organizers and Admins can view scan history"
+ON scans FOR SELECT
+USING (
+    EXISTS (
+        SELECT 1 FROM events
+        WHERE events.id = scans.event_id
+        AND (events.organizer_id = auth.uid() OR EXISTS (
+            SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'SUPER_ADMIN'
+        ))
+    )
+);
+
