@@ -1,0 +1,149 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Logo } from '@/components/ui/Logo';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Menu, X, QrCode, CreditCard, LayoutDashboard, Calendar } from 'lucide-react';
+
+export function PublicHeader() {
+  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-[#071229]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-[0_2px_15px_rgba(0,45,140,0.04)] transition-colors">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+        {/* Official Jël Tix Logo (Exact uploaded image) */}
+        <Logo size="md" href="/" />
+
+        {/* Desktop Navigation Links */}
+        <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold">
+          <Link
+            href="/"
+            className={`transition-colors py-1 relative ${
+              pathname === '/' || pathname === '/events'
+                ? 'text-[#0038A8] dark:text-[#4EED15] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#4EED15] after:rounded-full'
+                : 'text-slate-600 dark:text-slate-300 hover:text-[#0038A8] dark:hover:text-[#4EED15]'
+            }`}
+          >
+            Événements
+          </Link>
+          <Link
+            href="/events/match-pilote-finale-coupe"
+            className="text-slate-600 dark:text-slate-300 hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors flex items-center gap-1.5"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#2CA808] dark:bg-[#4EED15] animate-pulse" />
+            <span>Match Vedette (Finale)</span>
+          </Link>
+          <Link
+            href="/sales/pos"
+            className="text-slate-600 dark:text-slate-300 hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors flex items-center gap-1.5"
+          >
+            <CreditCard className="w-4 h-4 text-[#0038A8] dark:text-[#4EED15]" />
+            <span>Guichet Caisse (POS)</span>
+          </Link>
+          <Link
+            href="/scan"
+            target="_blank"
+            className="text-slate-600 dark:text-slate-300 hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors flex items-center gap-1.5"
+          >
+            <QrCode className="w-4 h-4 text-[#2CA808] dark:text-[#4EED15]" />
+            <span>Scanner Contrôleur</span>
+          </Link>
+        </nav>
+
+        {/* Desktop Quick Actions & Theme Toggle */}
+        <div className="hidden sm:flex items-center gap-3">
+          {/* Light / Dark Mode Toggle Button */}
+          <ThemeToggle />
+
+          <Link
+            href="/tickets/JT-7777-DEMO"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-[#0038A8] dark:text-white font-bold text-xs border border-slate-200 dark:border-white/10 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px] text-[#2CA808] dark:text-[#4EED15]">confirmation_number</span>
+            <span>Mon Billet Démo</span>
+          </Link>
+
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0038A8] to-[#0D52D6] hover:from-[#002D8C] hover:to-[#0B4FD8] text-white font-extrabold text-xs shadow-md shadow-[#0038A8]/20 transition-all hover:scale-[0.98] active:scale-95"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Connexion / Rôles</span>
+          </Link>
+        </div>
+
+        {/* Mobile Hamburger & Theme Toggle */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white hover:bg-slate-200 transition-colors cursor-pointer"
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-white dark:bg-[#071229] border-b border-slate-200 dark:border-white/10 px-6 py-4 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200">
+          <Link
+            href="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-3 py-2 text-sm font-bold text-slate-900 dark:text-white hover:text-[#0038A8]"
+          >
+            <Calendar className="w-5 h-5 text-[#0038A8] dark:text-[#4EED15]" />
+            <span>Explorer tous les événements</span>
+          </Link>
+          <Link
+            href="/events/match-pilote-finale-coupe"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-[#0038A8]"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2CA808] dark:bg-[#4EED15] animate-pulse" />
+            <span>Match Pilote (Finale Coupe)</span>
+          </Link>
+          <Link
+            href="/sales/pos"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-[#0038A8]"
+          >
+            <CreditCard className="w-5 h-5 text-[#0038A8] dark:text-[#4EED15]" />
+            <span>Guichet Caisse Rapide (POS)</span>
+          </Link>
+          <Link
+            href="/scan"
+            target="_blank"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-[#0038A8]"
+          >
+            <QrCode className="w-5 h-5 text-[#2CA808] dark:text-[#4EED15]" />
+            <span>Scanner PWA Contrôleur</span>
+          </Link>
+          <Link
+            href="/tickets/JT-7777-DEMO"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-[#0038A8]"
+          >
+            <span className="material-symbols-outlined text-[20px] text-[#0038A8] dark:text-[#4EED15]">confirmation_number</span>
+            <span>Voir Billet Démo (#JT-7777)</span>
+          </Link>
+          <div className="pt-2 border-t border-slate-200 dark:border-white/10">
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0038A8] to-[#0D52D6] text-white font-bold text-center text-sm flex items-center justify-center gap-2 shadow-md"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Accès Espace Organisateur / Admin</span>
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}

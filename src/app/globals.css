@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand Jël Tix Palette */
+  --color-primary: #0038A8;
+  --color-primary-hover: #002D8C;
+  --color-primary-container: #0D52D6;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #EEF4FF;
+  --color-primary-fixed: #DBE5FF;
+  --color-primary-fixed-dim: #B4C8FF;
+  --color-inverse-primary: #B4C8FF;
+
+  /* Vibrant Lime Green Accent (from Logo) */
+  --color-accent: #4EED15;
+  --color-accent-hover: #42D40F;
+  --color-accent-dark: #32A60A;
+  --color-tertiary: #2CA808;
+  --color-tertiary-container: #4EED15;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #052601;
+  --color-tertiary-fixed: #A6FFA0;
+  --color-tertiary-fixed-dim: #79F570;
+
+  /* Secondary & Neutral Tones */
+  --color-secondary: #475569;
+  --color-secondary-container: #E2E8F0;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #1E293B;
+
+  /* Default Light Canvas & Surface Tones (Pure Minimalist White) */
+  --color-background: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-bright: #FFFFFF;
+  --color-surface-dim: #F8FAFC;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #FFFFFF;
+  --color-surface-container: #F8FAFC;
+  --color-surface-container-high: #E2E8F0;
+  --color-surface-container-highest: #CBD5E1;
+  --color-surface-variant: #FFFFFF;
+
+  /* Text & Contrast for Light Mode */
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
+  --color-on-background: #0F172A;
+
+  /* Borders & Dividers */
+  --color-outline: #64748B;
+  --color-outline-variant: #E2E8F0;
+
+  /* Error & Alerts */
+  --color-error: #DC2626;
+  --color-error-container: #FEE2E2;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #7F1D1D;
+
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  --color-background: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
+}
+
+/* Dark Mode Tokens Override */
+.dark {
+  color-scheme: dark;
+  --color-background: #050D1E;
+  --color-surface: #0B1936;
+  --color-surface-bright: #0F2248;
+  --color-surface-dim: #040915;
+  --color-surface-container-lowest: #071229;
+  --color-surface-container-low: #0B1936;
+  --color-surface-container: #0F2248;
+  --color-surface-container-high: #162B59;
+  --color-surface-container-highest: #213B75;
+  --color-surface-variant: #0F2248;
+
+  --color-on-surface: #F8FAFC;
+  --color-on-surface-variant: #94A3B8;
+  --color-on-background: #F8FAFC;
+
+  --color-outline: #475569;
+  --color-outline-variant: #1E293B;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'liga';
+  }
+}
+
+/* Custom Scrollbar for Sleek backoffice look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Micro Animations & Glow Effects */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.88; transform: scale(1.02); }
+}
+
+@keyframes scan-laser {
+  0% { top: 0%; opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { top: 96%; opacity: 0.8; }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+.animate-scan-laser {
+  animation: scan-laser 2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+.animate-float-slow {
+  animation: float-slow 4s ease-in-out infinite;
+}

@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 320" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Brand Gradients -->
+    <linearGradient id="jt-blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E57E8" />
+      <stop offset="100%" stop-color="#022B8C" />
+    </linearGradient>
+
+    <linearGradient id="jt-green-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#55F018" />
+      <stop offset="100%" stop-color="#34C408" />
+    </linearGradient>
+
+    <linearGradient id="jt-banner-grad" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#0838B8" />
+      <stop offset="50%" stop-color="#002A94" />
+      <stop offset="100%" stop-color="#001859" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="jt-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#002A94" flood-opacity="0.25" />
+    </filter>
+    <filter id="jt-green-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#4EED15" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- BACKGROUND ARCHES / CIRCULAR SWOOSHES -->
+  <!-- Outer Blue Arc -->
+  <path d="M 125 185 A 135 135 0 1 1 375 185" fill="none" stroke="#0035A9" stroke-width="16" stroke-linecap="round" />
+
+  <!-- Inner Green Arc -->
+  <path d="M 148 185 A 110 110 0 1 1 352 185" fill="none" stroke="#48DE0E" stroke-width="12" stroke-linecap="round" />
+
+  <!-- Green Speed Lines (Left Motion) -->
+  <path d="M 145 125 L 210 120" stroke="#48DE0E" stroke-width="6" stroke-linecap="round" />
+  <path d="M 135 140 L 215 135" stroke="#48DE0E" stroke-width="7" stroke-linecap="round" />
+  <path d="M 140 155 L 205 152" stroke="#0035A9" stroke-width="6" stroke-linecap="round" />
+  <path d="M 130 170 L 195 168" stroke="#0035A9" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Right Green Accent Leaf / Swoosh -->
+  <path d="M 370 175 C 385 195 385 220 370 240 C 395 210 395 180 370 175 Z" fill="#48DE0E" />
+
+  <!-- HAND HOLDING THE TICKET -->
+  <g id="hand-and-ticket">
+    <!-- Ticket (Rotated Cobalt Card) -->
+    <g transform="translate(245, 45) rotate(18)">
+      <!-- Ticket Body with cutouts -->
+      <path d="M 10 0 
+               L 80 0 
+               A 10 10 0 0 1 90 10 
+               A 10 10 0 0 0 110 10
+               A 10 10 0 0 1 120 20
+               L 120 65 
+               A 10 10 0 0 1 110 75
+               A 10 10 0 0 0 90 75
+               A 10 10 0 0 1 80 85
+               L 10 85 
+               A 10 10 0 0 1 0 75
+               L 0 10 
+               A 10 10 0 0 1 10 0 Z" 
+            fill="#0B4FD8" stroke="#FFFFFF" stroke-width="3.5" />
+      
+      <!-- Inner Perforated/Dashed Border -->
+      <rect x="8" y="8" width="94" height="69" rx="6" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-dasharray="4 3" opacity="0.85" />
+      
+      <!-- Crisp Center Star -->
+      <polygon points="55,22 62,37 78,38 65,49 70,65 55,55 40,65 45,49 32,38 48,37" fill="#FFFFFF" />
+    </g>
+
+    <!-- Stylized Hand Silhouette (Navy Blue) -->
+    <path d="M 155 185 
+             C 170 178, 195 160, 215 135 
+             C 225 120, 235 105, 248 100 
+             C 255 97, 263 103, 260 112 
+             C 255 125, 245 138, 235 150 
+             L 265 142 
+             C 275 140, 282 146, 278 155 
+             C 270 168, 255 180, 230 185 
+             L 155 185 Z" 
+          fill="#00227B" />
+  </g>
+
+  <!-- LOWER BANNER (JËL TIX) -->
+  <g id="banner-group" filter="url(#jt-glow)">
+    <!-- Curved 3D Brand Banner -->
+    <path d="M 65 200 
+             L 75 240 
+             L 50 255 
+             L 435 235 
+             C 455 225 450 200 425 205 
+             L 65 200 Z" 
+          fill="url(#jt-banner-grad)" />
+
+    <path d="M 75 240 
+             L 430 220 
+             C 445 220 445 235 430 240 
+             L 50 255 Z" 
+          fill="#00144D" opacity="0.6" />
+
+    <!-- "Jël" Wordmark in Bold White -->
+    <g transform="translate(85, 242)">
+      <!-- J with trema/dots on E -->
+      <text x="0" y="0" font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="52" fill="#FFFFFF" letter-spacing="-1">Jël</text>
+    </g>
+
+    <!-- "Tix" Wordmark in Neon Lime Green -->
+    <g transform="translate(235, 242)" filter="url(#jt-green-glow)">
+      <text x="0" y="0" font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="52" fill="#4EED15" letter-spacing="-1">Tix</text>
+    </g>
+  </g>
+
+  <!-- TAGLINE: Saisissez • Réservez • Profitez -->
+  <g transform="translate(250, 288)">
+    <text x="0" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-style="italic" font-size="18" fill="#002D8C" letter-spacing="1">
+      Saisissez • Réservez • Profitez
+    </text>
+  </g>
+</svg>
