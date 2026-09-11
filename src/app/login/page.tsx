@@ -32,10 +32,10 @@ export default function LoginPage() {
   const { setCurrentUser, users, addUser } = useStore();
 
   const [mode, setMode] = useState<AuthMode>('login');
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('ORGANIZER');
+  const [fullName, setFullName] = useState('Super Administrateur');
+  const [email, setEmail] = useState('admin@foutaticket.sn');
+  const [password, setPassword] = useState('demo2026!');
+  const [role, setRole] = useState<UserRole>('SUPER_ADMIN');
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -95,12 +95,13 @@ export default function LoginPage() {
         if (existing) {
           activeUser = existing;
         } else {
-          // Fallback session for new email
+          // Detect admin email or fallback
+          const isAdmin = cleanEmail.includes('admin') || cleanEmail === 'admin@foutaticket.sn' || cleanEmail === 'admin@jeltix.sn';
           activeUser = {
             id: `usr-${Date.now()}`,
-            fullName: cleanEmail.split('@')[0] || 'Utilisateur',
+            fullName: isAdmin ? 'Super Administrateur' : (cleanEmail.split('@')[0] || 'Utilisateur'),
             email: cleanEmail,
-            role: 'ORGANIZER',
+            role: isAdmin ? 'SUPER_ADMIN' : 'ORGANIZER',
             isActive: true,
             createdAt: new Date().toISOString(),
           };
