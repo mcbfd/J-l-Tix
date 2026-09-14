@@ -159,6 +159,9 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMsg(null);
     try {
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error("Erreur système : Les identifiants Supabase ne sont pas configurés sur ce serveur (Vercel).");
+      }
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
