@@ -55,7 +55,7 @@
   --color-on-error: #ffffff;
   --color-on-error-container: #7F1D1D;
 
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 :root {
