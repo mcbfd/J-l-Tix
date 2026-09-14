@@ -43,15 +43,15 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Protect private routes
+  // Protect private dashboard routes while leaving public events and PWA scanner accessible
   const isProtectedPath =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/sales') ||
-    pathname.startsWith('/events') ||
+    pathname === '/events' ||
+    pathname.startsWith('/events/new') ||
     pathname.startsWith('/scans') ||
     pathname.startsWith('/users') ||
-    pathname.startsWith('/reports') ||
-    pathname.startsWith('/scan');
+    pathname.startsWith('/reports');
 
   // Check for Supabase Auth session or application auth cookie
   const hasAuthCookie = request.cookies.has('jeltix_auth_session');

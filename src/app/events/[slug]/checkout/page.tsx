@@ -8,6 +8,8 @@ import { playSuccessBeep } from '@/lib/audio/sound-effects';
 import { PublicHeader } from '@/components/layout/PublicHeader';
 import { Footer } from '@/components/layout/Footer';
 import { PaymentMethod, OrderItem } from '@/types';
+import { CheckoutSchema } from '@/lib/validations';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import confetti from 'canvas-confetti';
 import Link from 'next/link';
 import {
@@ -21,6 +23,7 @@ import {
   Zap,
   CreditCard,
   Smartphone,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function CheckoutPage({
@@ -44,6 +47,7 @@ export default function CheckoutPage({
   const [customerEmail, setCustomerEmail] = useState('m.ndiaye@gmail.com');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('WAVE');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -78,8 +82,32 @@ export default function CheckoutPage({
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !customerPhone.trim()) {
-      alert('Veuillez renseigner votre nom et numéro de téléphone.');
+    setValidationError(null);
+
+    // 1. Rate Limiting Check (Max 5 attempts per minute per phone)
+    const rateCheck = checkRateLimit(`checkout_${customerPhone.replace(/\s+/g, '')}`, 5, 60000);
+    if (!rateCheck.success) {
+      setValidationError(
+        `Trop de tentatives de paiement. Veuillez patienter ${Math.ceil(rateCheck.resetMs / 1000)} secondes avant de réessayer.`
+      );
+      return;
+    }
+
+    // 2. Strict Zod Schema Validation
+    const validation = CheckoutSchema.safeParse({
+      customerName,
+      customerPhone,
+      customerEmail: customerEmail.trim() || undefined,
+      paymentMethod,
+      items: checkoutData.items.map((item) => ({
+        ticketTypeId: item.ticketTypeId,
+        quantity: item.quantity,
+      })),
+    });
+
+    if (!validation.success) {
+      const firstIssue = validation.error.issues[0]?.message || 'Informations de paiement invalides';
+      setValidationError(firstIssue);
       return;
     }
 
@@ -89,9 +117,9 @@ export default function CheckoutPage({
     setTimeout(() => {
       const result = purchaseTickets({
         eventId: event.id,
-        customerName,
-        customerPhone,
-        customerEmail,
+        customerName: validation.data.customerName,
+        customerPhone: validation.data.customerPhone,
+        customerEmail: validation.data.customerEmail,
         items: checkoutData.items,
         paymentMethod,
         channel: 'ONLINE',
@@ -140,6 +168,13 @@ export default function CheckoutPage({
         <form onSubmit={handlePay} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Client Details & Payment Option */}
           <div className="lg:col-span-7 flex flex-col gap-6">
+            {validationError && (
+              <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 flex items-center gap-3 text-red-700 dark:text-red-300 text-xs font-semibold animate-in fade-in">
+                <AlertCircle className="w-5 h-5 shrink-0 text-red-600 dark:text-red-400" />
+                <span>{validationError}</span>
+              </div>
+            )}
+
             {/* Step 1: Client Coordinates */}
             <div className="bg-surface-container-lowest rounded-3xl p-6 sm:p-8 border border-outline-variant/30 shadow-xs space-y-4">
               <h2 className="text-base font-black text-on-surface flex items-center gap-2 border-b border-outline-variant/20 pb-3">
