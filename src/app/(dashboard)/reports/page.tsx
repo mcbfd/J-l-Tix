@@ -108,7 +108,10 @@ export default function ReportsPage() {
           </h3>
 
           <div className="space-y-3">
-            {events.map((evt) => (
+            {events.map((evt) => {
+              const eventRevenue = orders.filter(o => o.eventId === evt.id && o.paymentStatus === 'COMPLETED').reduce((sum, order) => sum + order.totalAmount, 0);
+              
+              return (
               <div
                 key={evt.id}
                 className="p-4 bg-surface rounded-2xl border border-outline-variant/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
@@ -121,14 +124,14 @@ export default function ReportsPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-base font-black text-primary font-mono">
-                    {formatFCFA(evt.soldCapacity * 420)} FCFA
+                    {formatFCFA(eventRevenue)} FCFA
                   </p>
                   <p className="text-[11px] text-on-surface-variant font-mono">
                     {evt.soldCapacity.toLocaleString('fr-FR')} billets vendus
                   </p>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>

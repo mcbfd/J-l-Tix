@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useJeltixStore } from '@/lib/store/jeltix-store';
 import { UserRole, UserProfile } from '@/types';
 import { syncUserProfile } from '@/lib/services/profiles.service';
+import { InviteUserSchema } from '@/lib/validations';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -76,21 +77,34 @@ export default function UsersPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email) return;
 
-    const generatedId = `usr-${Date.now()}`;
-    await syncUserProfile(generatedId, email, fullName, role);
-
-    addUser({
+    const validation = InviteUserSchema.safeParse({
       fullName,
       email,
-      phone: phone || '+221 77 000 00 00',
+      phone,
       role,
-      organization: organization || 'Jël Tix SAS',
+      organization
+    });
+
+    if (!validation.success) {
+      showToast(validation.error.issues[0]?.message || 'Informations invalides');
+      return;
+    }
+
+    const validData = validation.data;
+    const generatedId = `usr-${Date.now()}`;
+    await syncUserProfile(generatedId, validData.email, validData.fullName, validData.role as UserRole);
+
+    addUser({
+      fullName: validData.fullName,
+      email: validData.email,
+      phone: validData.phone || '+221 77 000 00 00',
+      role: validData.role as UserRole,
+      organization: validData.organization || 'Jël Tix SAS',
       isActive: true,
     });
 
-    showToast(`Utilisateur ${fullName} invité avec succès !`);
+    showToast(`Utilisateur ${validData.fullName} invité avec succès !`);
     setShowInviteModal(false);
     setFullName('');
     setEmail('');

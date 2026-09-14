@@ -51,25 +51,27 @@ export default function LoginPage() {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      // 1. Attempt Supabase Auth if credentials are configured
+      // 1. Attempt Supabase Auth
       const supabase = createClient();
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        if (mode === 'login') {
-          const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-          if (error) {
-            console.warn('Supabase Auth error:', error.message);
-          }
-        } else {
-          const { error } = await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-            options: {
-              data: { full_name: fullName, role },
-            },
-          });
-          if (error) {
-            console.warn('Supabase SignUp error:', error.message);
-          }
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error("Configuration Supabase manquante.");
+      }
+
+      if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (error) {
+          throw new Error("Email ou mot de passe incorrect.");
+        }
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: { full_name: fullName, role },
+          },
+        });
+        if (error) {
+          throw new Error(error.message);
         }
       }
 
@@ -152,6 +154,25 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback${redirectPath ? `?redirect=${redirectPath}` : ''}`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Une erreur est survenue avec Google OAuth.');
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-[#F0F4F9] dark:bg-[#071229] text-slate-900 dark:text-white flex flex-col justify-between relative overflow-hidden transition-colors selection:bg-[#4EED15]/30">
@@ -326,7 +347,7 @@ export default function LoginPage() {
                 {/* Google */}
                 <button
                   type="button"
-                  onClick={() => alert('Authentification Google SSO')}
+                  onClick={handleGoogleLogin}
                   className="w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30 flex items-center justify-center text-xs font-black text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-all cursor-pointer"
                   title="Google"
                 >
