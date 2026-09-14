@@ -14,6 +14,8 @@ import {
   EventStatus,
 } from '@/types';
 import { generateTicketCode, generateOrderReference } from '../utils/format';
+import { fetchPublishedEvents, createEventInSupabase } from '@/lib/services/events.service';
+import { createRealOrderWithTickets, validateScanInSupabase } from '@/lib/services/tickets.service';
 
 // Seed Initial Events matching the Jël Tix experience
 const INITIAL_EVENTS: EventItem[] = [
@@ -732,6 +734,18 @@ class JeltixStore {
     this.tickets.unshift(...newTickets);
     this.save();
 
+    // Asynchronously record real order in Supabase
+    createRealOrderWithTickets({
+      eventId: params.eventId,
+      customerName: params.customerName,
+      customerPhone: params.customerPhone,
+      customerEmail: params.customerEmail,
+      items: params.items,
+      paymentMethod: params.paymentMethod,
+      channel: params.channel,
+      sellerId: params.sellerId,
+    }).catch((err) => console.warn('Supabase cloud order sync notice:', err));
+
     return { order, generatedTickets: newTickets };
   }
 
@@ -753,6 +767,11 @@ class JeltixStore {
       t.ticketCode.toUpperCase() === cleanCode ||
       t.ticketCode.replace('JT-', 'FT-') === cleanCode ||
       t.ticketCode.replace('FT-', 'JT-') === cleanCode
+    );
+
+    // Asynchronously log scan in Supabase
+    validateScanInSupabase(cleanCode, gate).catch((err) =>
+      console.warn('Supabase cloud scan sync notice:', err)
     );
 
     // Case 1: Fake or Unknown Ticket
@@ -845,6 +864,30 @@ class JeltixStore {
     };
     this.events.unshift(newEvent);
     this.save();
+
+    // Asynchronously sync event with Supabase
+    createEventInSupabase({
+      slug: newEvent.slug,
+      title: newEvent.title,
+      category: newEvent.category,
+      venue: newEvent.venue,
+      locationDetails: newEvent.locationDetails,
+      startDate: newEvent.startDate,
+      timeString: newEvent.timeString,
+      bannerImage: newEvent.bannerImage,
+      description: newEvent.description,
+      totalCapacity: newEvent.totalCapacity,
+      organizerId: newEvent.organizerId,
+      organizerName: newEvent.organizerName,
+      ticketTypes: newEvent.ticketTypes.map((tt) => ({
+        name: tt.name,
+        price: tt.price,
+        badge: tt.badge,
+        description: tt.description,
+        totalQuantity: tt.totalQuantity,
+      })),
+    }).catch((err) => console.warn('Supabase cloud event sync notice:', err));
+
     return newEvent;
   }
 
@@ -884,13 +927,56 @@ class JeltixStore {
     }
   }
 
-  // Real-time Dashboard KPIs calculation
+  // Synchronize published events from live Supabase DB
+  public async syncFromSupabase() {
+    try {
+      const liveEvents = await fetchPublishedEvents();
+      if (liveEvents && liveEvents.length > 0) {
+        const eventMap = new Map(this.events.map((e) => [e.slug, e]));
+        liveEvents.forEach((liveEvt) => {
+          eventMap.set(liveEvt.slug, liveEvt);
+        });
+        this.events = Array.from(eventMap.values());
+        this.save();
+      }
+    } catch (err) {
+      console.warn('Supabase sync notice:', err);
+    }
+  }
+
+  // Real-time Dashboard KPIs calculation with strict role-based data isolation
   public getDashboardKPIs(): DashboardKPIs {
-    const totalRevenue = this.orders.reduce((sum, o) => sum + o.totalAmount, 0) + 24850000;
-    const totalTicketsSold = this.events.reduce((sum, e) => sum + e.soldCapacity, 0);
-    const activeEventsCount = this.events.filter((e) => e.status === 'PUBLISHED').length;
-    const successfulScansCount = this.scans.filter((s) => s.result === 'VALID').length;
-    const totalCapacity = this.events.reduce((sum, e) => sum + e.totalCapacity, 0);
+    const isOrganizer = this.currentUser?.role === 'ORGANIZER';
+
+    // Scoped events according to user role
+    const scopedEvents = isOrganizer
+      ? this.events.filter((e) => e.organizerId === this.currentUser?.id)
+      : this.events;
+
+    const scopedEventIds = new Set(scopedEvents.map((e) => e.id));
+
+    // Scoped tickets, orders, and scans
+    const scopedTickets = isOrganizer
+      ? this.tickets.filter((t) => scopedEventIds.has(t.eventId))
+      : this.tickets;
+
+    const scopedOrders = isOrganizer
+      ? this.orders.filter((o) => scopedEventIds.has(o.eventId))
+      : this.orders;
+
+    const scopedScans = isOrganizer
+      ? this.scans.filter((s) => scopedEventIds.has(s.eventId))
+      : this.scans;
+
+    // Real revenue calculation (zero fictitious padding)
+    const totalRevenue = scopedOrders.length > 0
+      ? scopedOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+      : scopedTickets.reduce((sum, t) => sum + t.pricePaid, 0);
+
+    const totalTicketsSold = scopedEvents.reduce((sum, e) => sum + e.soldCapacity, 0);
+    const activeEventsCount = scopedEvents.filter((e) => e.status === 'PUBLISHED').length;
+    const successfulScansCount = scopedScans.filter((s) => s.result === 'VALID').length;
+    const totalCapacity = scopedEvents.reduce((sum, e) => sum + e.totalCapacity, 0);
     const globalFillRate = totalCapacity > 0 ? Math.round((totalTicketsSold / totalCapacity) * 100) : 0;
 
     return {
@@ -923,6 +1009,9 @@ export function useJeltixStore() {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    // Synchronize published events from live Supabase on mount
+    jeltixStoreInstance.syncFromSupabase();
+
     return jeltixStoreInstance.subscribe(() => {
       setTick((t) => t + 1);
     });
@@ -952,6 +1041,7 @@ export function useJeltixStore() {
     setCurrentUser: (user: UserProfile | null) => jeltixStoreInstance.setCurrentUser(user),
     getDashboardKPIs: () => jeltixStoreInstance.getDashboardKPIs(),
     resetToDemoData: () => jeltixStoreInstance.resetToDemoData(),
+    syncFromSupabase: () => jeltixStoreInstance.syncFromSupabase(),
   }), [tick]);
 }
 

@@ -1,15 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useJeltixStore } from '@/lib/store/jeltix-store';
+import { uploadEventImage } from '@/lib/services/storage.service';
+import { createEventInSupabase } from '@/lib/services/events.service';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Sparkles, CheckCircle2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Calendar,
+  MapPin,
+  Sparkles,
+  CheckCircle2,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import type { EventCategory } from '@/types';
 
 export default function NewEventPage() {
   const router = useRouter();
-  const { createEvent } = useJeltixStore();
+  const { currentUser, createEvent } = useJeltixStore();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<EventCategory>('Football');
@@ -18,10 +32,15 @@ export default function NewEventPage() {
   const [startDate, setStartDate] = useState('');
   const [timeString, setTimeString] = useState('18:00 UTC');
   const [bannerImage, setBannerImage] = useState(
-    'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1200&q=80'
+    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80'
   );
   const [description, setDescription] = useState('');
   const [totalCapacity, setTotalCapacity] = useState(25000);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Ticket Categories
   const [ticketTypes, setTicketTypes] = useState([
@@ -71,19 +90,43 @@ export default function NewEventPage() {
     setTicketTypes((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Image Upload Handler (Mobile camera or File selection)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setErrorMessage(null);
+
+    try {
+      const publicUrl = await uploadEventImage(file);
+      setBannerImage(publicUrl);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erreur lors du téléversement de l'image.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !venue || !startDate) {
-      alert('Veuillez remplir tous les champs obligatoires.');
+      setErrorMessage('Veuillez renseigner tous les champs obligatoires (*).');
       return;
     }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
 
     const slug = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    createEvent({
+    const organizerId = currentUser?.id || `usr-org-${Date.now()}`;
+    const organizerName = currentUser?.fullName || 'Mon Organisation';
+
+    const eventPayload = {
       slug,
       title,
       category,
@@ -93,16 +136,38 @@ export default function NewEventPage() {
       timeString: timeString || '18:00 UTC',
       bannerImage,
       description: description || `Événement majeur organisé au ${venue}.`,
-      status: 'PUBLISHED',
+      status: 'PUBLISHED' as const,
       totalCapacity: Number(totalCapacity),
-      organizerId: 'usr-1',
-      organizerName: 'Admin Principal / Fédération',
+      organizerId,
+      organizerName,
+      ticketTypes: ticketTypes.map((tt) => ({
+        name: tt.name,
+        price: Number(tt.price),
+        badge: tt.badge || '',
+        description: tt.description || '',
+        totalQuantity: Number(tt.totalQuantity),
+      })),
+    };
+
+    try {
+      // 1. Save directly into Supabase Database
+      await createEventInSupabase(eventPayload);
+    } catch (err) {
+      console.warn('Supabase createEvent notice, persisting locally:', err);
+    }
+
+    // 2. Persist in local store
+    createEvent({
+      ...eventPayload,
       ticketTypes: ticketTypes.map((tt, idx) => ({
         ...tt,
         id: `tt-${Date.now()}-${idx}`,
+        price: Number(tt.price),
+        totalQuantity: Number(tt.totalQuantity),
       })),
     });
 
+    setIsSubmitting(false);
     router.push('/events');
   };
 
@@ -116,62 +181,64 @@ export default function NewEventPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface">Créer un Nouvel Événement</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface">
+            Créer un Nouvel Événement
+          </h1>
           <p className="text-xs text-on-surface-variant">
-            Renseignez les détails, la date et la configuration tarifaire des billets Jël Tix.
+            Publiez votre événement avec billetterie en temps réel et image de valorisation.
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* General Info Card */}
-        <div className="bg-surface-container-low rounded-3xl p-6 border border-outline-variant/30 space-y-4 shadow-sm">
-          <h2 className="text-sm font-black uppercase tracking-wider text-on-surface flex items-center gap-2 border-b border-outline-variant/20 pb-3 font-mono">
-            <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-            <span>Informations Générales de l'Événement</span>
+      {errorMessage && (
+        <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 flex items-center gap-3 text-red-700 dark:text-red-300 text-xs font-semibold animate-in fade-in">
+          <AlertCircle className="w-5 h-5 shrink-0 text-red-600 dark:text-red-400" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* SECTION 1: Informations Générales */}
+        <div className="bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/30 space-y-4">
+          <h2 className="text-base font-bold text-on-surface border-b border-outline-variant/20 pb-2">
+            1. Informations Générales
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-on-surface mb-1">
-                Titre de l'Événement *
-              </label>
-              <input
-                type="text"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Demi-Finale Coupe du Sénégal : Jaraaf vs Teungueth"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-outline-variant/40 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-on-surface mb-1">
-                Discipline / Catégorie *
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-outline-variant/40 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-              >
-                <option value="Football">Football & Navétanes</option>
-                <option value="Basketball">Basketball D1 / BAL</option>
-                <option value="Lutte Sénégalaise">Lutte Sénégalaise</option>
-                <option value="Concert / Festival">Concert / Festival</option>
-                <option value="Oscars & Soirées Gala">Oscars & Soirées Gala</option>
-                <option value="Théâtre & Humour">Théâtre & Humour</option>
-                <option value="Conférence / Salon">Conférence / Salon</option>
-                <option value="Autre Événement">Autre Événement</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-on-surface mb-1">
+              Titre Officiel de l'Événement *
+            </label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Derby ASC Jaraaf vs ASC Jeanne d'Arc 2026"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-outline-variant/40 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-on-surface mb-1">
-                Stade / Lieu *
-              </label>
+              <label className="block text-xs font-bold text-on-surface mb-1">Catégorie</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as EventCategory)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-outline-variant/40 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="Football">⚽ Football</option>
+                <option value="Basketball">🏀 Basketball</option>
+                <option value="Lutte Sénégalaise">🤼 Lutte Sénégalaise</option>
+                <option value="Concert / Festival">🎤 Concert / Festival</option>
+                <option value="Oscars & Soirées Gala">🏆 Oscars & Soirées Gala</option>
+                <option value="Théâtre & Humour">🎭 Théâtre & Humour</option>
+                <option value="Conférence / Salon">💼 Conférence / Salon</option>
+                <option value="Autre Événement">✨ Autre Événement</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-on-surface mb-1">Lieu / Stade *</label>
               <input
                 type="text"
                 required
@@ -225,7 +292,7 @@ export default function NewEventPage() {
 
             <div>
               <label className="block text-xs font-bold text-on-surface mb-1">
-                Capacité Totale du Stade
+                Capacité Totale Estimée
               </label>
               <input
                 type="number"
@@ -236,16 +303,72 @@ export default function NewEventPage() {
             </div>
           </div>
 
+          {/* Image Upload Component */}
           <div>
             <label className="block text-xs font-bold text-on-surface mb-1">
-              URL de l'Image Bannière (Unsplash)
+              Image / Affiche de Valorisation de l'Événement
             </label>
+
+            {/* Hidden file input */}
             <input
-              type="url"
-              value={bannerImage}
-              onChange={(e) => setBannerImage(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-outline-variant/40 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
             />
+
+            {/* Image Preview & Upload Dropzone */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-surface border border-outline-variant/30">
+              <div className="relative w-full sm:w-48 h-32 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border shrink-0 flex items-center justify-center">
+                {bannerImage ? (
+                  <img
+                    src={bannerImage}
+                    alt="Aperçu bannière"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="w-8 h-8 text-slate-400" />
+                )}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#4EED15]" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 w-full space-y-2 text-center sm:text-left">
+                <p className="text-xs font-bold text-on-surface">
+                  Ajoutez une photo réelle pour valoriser votre événement
+                </p>
+                <p className="text-[11px] text-on-surface-variant">
+                  Format recommandé : 1200x600 px (JPG, PNG, WebP). Max 5 Mo.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploading ? 'Téléversement...' : 'Choisir une photo'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const promptUrl = prompt('Entrez l’URL de l’image :', bannerImage);
+                      if (promptUrl) setBannerImage(promptUrl);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-surface-container text-on-surface-variant text-xs font-semibold hover:bg-surface-container-high transition-colors cursor-pointer"
+                  >
+                    Ou coller un lien
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -262,112 +385,137 @@ export default function NewEventPage() {
           </div>
         </div>
 
-        {/* Ticket Categories Configuration */}
-        <div className="bg-surface-container-low rounded-3xl p-6 border border-outline-variant/30 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+        {/* SECTION 2: Catégories & Tarifs de Billets */}
+        <div className="bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/30 space-y-4">
+          <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-on-surface font-mono">
-                Catégories & Tarification des Billets
-              </h2>
+              <h2 className="text-base font-bold text-on-surface">2. Catégories & Tarifs de Billets</h2>
               <p className="text-[11px] text-on-surface-variant">
-                Définissez les zones du stade, les quotas et les prix en FCFA.
+                Configurez les catégories disponibles à la vente en ligne et au guichet.
               </p>
             </div>
             <button
               type="button"
               onClick={handleAddTicketType}
-              className="px-3.5 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold flex items-center gap-1.5 hover:bg-primary/20 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une catégorie</span>
+              <span>Ajouter une Catégorie</span>
             </button>
           </div>
 
-          <div className="space-y-3">
-            {ticketTypes.map((tt, index) => (
+          <div className="space-y-4">
+            {ticketTypes.map((tt, idx) => (
               <div
-                key={index}
-                className="bg-surface p-4 rounded-2xl border border-outline-variant/30 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center"
+                key={tt.id}
+                className="p-4 rounded-2xl bg-surface border border-outline-variant/30 space-y-3 relative"
               >
-                <div className="sm:col-span-4">
-                  <label className="block text-[10px] font-bold text-on-surface-variant font-mono uppercase mb-1">
-                    Nom de la Catégorie
-                  </label>
-                  <input
-                    type="text"
-                    value={tt.name}
-                    onChange={(e) => {
-                      const next = [...ticketTypes];
-                      next[index].name = e.target.value;
-                      setTicketTypes(next);
-                    }}
-                    className="w-full px-3 py-2 text-xs font-bold rounded-xl bg-surface-container border border-outline-variant/30 outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-[10px] font-bold text-on-surface-variant font-mono uppercase mb-1">
-                    Prix (FCFA)
-                  </label>
-                  <input
-                    type="number"
-                    value={tt.price}
-                    onChange={(e) => {
-                      const next = [...ticketTypes];
-                      next[index].price = Number(e.target.value);
-                      setTicketTypes(next);
-                    }}
-                    className="w-full px-3 py-2 text-xs font-black font-mono rounded-xl bg-surface-container border border-outline-variant/30 outline-none text-primary"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-[10px] font-bold text-on-surface-variant font-mono uppercase mb-1">
-                    Quota / Quantité
-                  </label>
-                  <input
-                    type="number"
-                    value={tt.totalQuantity}
-                    onChange={(e) => {
-                      const next = [...ticketTypes];
-                      next[index].totalQuantity = Number(e.target.value);
-                      setTicketTypes(next);
-                    }}
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-surface-container border border-outline-variant/30 outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 flex justify-end">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-black uppercase text-primary">
+                    Catégorie #{idx + 1}
+                  </span>
                   {ticketTypes.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => handleRemoveTicketType(index)}
-                      className="p-2 rounded-xl text-error hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
-                      title="Supprimer"
+                      onClick={() => handleRemoveTicketType(idx)}
+                      className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
+                      title="Supprimer cette catégorie"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-on-surface mb-1">
+                      Nom du Billet *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={tt.name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTicketTypes((prev) =>
+                          prev.map((item, i) => (i === idx ? { ...item, name: val } : item))
+                        );
+                      }}
+                      placeholder="Ex: Gradins Virage"
+                      className="w-full px-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-on-surface mb-1">
+                      Prix Unitaire (FCFA) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      step={50}
+                      value={tt.price}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setTicketTypes((prev) =>
+                          prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-on-surface mb-1">
+                      Quantité Disponible *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      value={tt.totalQuantity}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setTicketTypes((prev) =>
+                          prev.map((item, i) =>
+                            i === idx ? { ...item, totalQuantity: val } : item
+                          )
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Submit Action */}
+        {/* Action Button Bar */}
         <div className="flex items-center justify-end gap-3 pt-4">
           <Link
             href="/events"
-            className="px-6 py-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-xs transition-colors"
+            className="px-5 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-bold transition-colors"
           >
             Annuler
           </Link>
           <button
             type="submit"
-            className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#0038A8] to-[#0D52D6] hover:from-[#002D8C] hover:to-[#0B4FD8] text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-primary/20 transition-transform active:scale-95 cursor-pointer flex items-center gap-2"
+            disabled={isSubmitting || isUploading}
+            className="px-6 py-2.5 rounded-xl bg-[#0038A8] text-white hover:bg-[#002D8C] text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <CheckCircle2 className="w-4 h-4 text-[#4EED15]" />
-            <span>Publier l'Événement sur Jël Tix</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-[#4EED15]" />
+                <span>Publication en cours...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-[#4EED15]" />
+                <span>Enregistrer & Publier l'Événement</span>
+              </>
+            )}
           </button>
         </div>
       </form>

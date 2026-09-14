@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useJeltixStore } from '@/lib/store/jeltix-store';
 import { UserRole, UserProfile } from '@/types';
+import { syncUserProfile } from '@/lib/services/profiles.service';
+import Link from 'next/link';
 import {
   UserPlus,
   ShieldCheck,
@@ -14,10 +16,12 @@ import {
   User,
   Power,
   Sparkles,
+  Lock,
+  ArrowLeft,
 } from 'lucide-react';
 
 export default function UsersPage() {
-  const { users, addUser, toggleUserStatus } = useJeltixStore();
+  const { users, addUser, toggleUserStatus, currentUser } = useJeltixStore();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,6 +34,28 @@ export default function UsersPage() {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   };
+
+  // Access Control: Only Super Admin can access user management
+  if (currentUser && currentUser.role !== 'SUPER_ADMIN') {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black text-on-surface mb-2">Accès Administrateur Restreint</h2>
+        <p className="text-xs text-on-surface-variant max-w-md mb-6 leading-relaxed">
+          La gestion des utilisateurs, des opérateurs de billetterie et des permissions est exclusivement réservée au Super Administrateur de la plateforme Jël Tix.
+        </p>
+        <Link
+          href="/dashboard"
+          className="px-5 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Retourner au Tableau de Bord</span>
+        </Link>
+      </div>
+    );
+  }
 
   const getRoleBadge = (r: UserRole) => {
     switch (r) {
@@ -48,9 +74,12 @@ export default function UsersPage() {
     }
   };
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email) return;
+
+    const generatedId = `usr-${Date.now()}`;
+    await syncUserProfile(generatedId, email, fullName, role);
 
     addUser({
       fullName,
@@ -232,7 +261,6 @@ export default function UsersPage() {
                     <option value="SELLER">Vendeur Guichet</option>
                     <option value="ORGANIZER">Organisateur</option>
                     <option value="FINANCE">Finance & Audit</option>
-                    <option value="SUPER_ADMIN">Super Admin</option>
                   </select>
                 </div>
 

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function EventsManagementPage() {
-  const { events, updateEventStatus, deleteEvent } = useJeltixStore();
+  const { events, updateEventStatus, deleteEvent, currentUser } = useJeltixStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [toast, setToast] = useState<string | null>(null);
@@ -30,7 +30,15 @@ export default function EventsManagementPage() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const filteredEvents = useMemo(() => events.filter((evt) => {
+  // Multi-tenant isolation: Organizers strictly see only their own events
+  const scopedEvents = useMemo(() => {
+    if (!currentUser || currentUser.role === 'SUPER_ADMIN') {
+      return events;
+    }
+    return events.filter((evt) => evt.organizerId === currentUser.id);
+  }, [events, currentUser]);
+
+  const filteredEvents = useMemo(() => scopedEvents.filter((evt) => {
     const matchesSearch =
       evt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       evt.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -43,7 +51,7 @@ export default function EventsManagementPage() {
       (statusFilter === 'closed' && evt.status === 'CLOSED');
 
     return matchesSearch && matchesStatus;
-  }), [events, searchQuery, statusFilter]);
+  }), [scopedEvents, searchQuery, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredEvents.length / ITEMS_PER_PAGE));
   const paginatedEvents = filteredEvents.slice(
@@ -67,8 +75,8 @@ export default function EventsManagementPage() {
     }
   };
 
-  const totalSold = events.reduce((s, e) => s + e.soldCapacity, 0);
-  const totalCap = Math.max(1, events.reduce((s, e) => s + e.totalCapacity, 0));
+  const totalSold = scopedEvents.reduce((s, e) => s + e.soldCapacity, 0);
+  const totalCap = Math.max(1, scopedEvents.reduce((s, e) => s + e.totalCapacity, 0));
   const avgFillRate = Math.round((totalSold / totalCap) * 100);
 
   return (

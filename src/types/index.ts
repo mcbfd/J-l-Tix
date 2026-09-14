@@ -67,6 +67,8 @@ export interface EventItem {
   createdAt: string;
 }
 
+export type Event = EventItem;
+
 export interface OrderItem {
   ticketTypeId: string;
   ticketTypeName: string;

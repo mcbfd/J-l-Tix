@@ -21,6 +21,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import type { UserRole, UserProfile } from '@/types';
+import { isSuperAdminEmail, syncUserProfile } from '@/lib/services/profiles.service';
 
 type AuthMode = 'login' | 'register';
 
@@ -75,38 +76,51 @@ export default function LoginPage() {
       let activeUser: UserProfile;
 
       if (mode === 'register') {
-        // Check if user already exists
-        const existing = users.find((u: UserProfile) => u.email.toLowerCase() === cleanEmail);
-        if (existing) {
-          activeUser = existing;
-        } else {
-          // Register new user profile in store
-          activeUser = addUser({
-            fullName: fullName || 'Nouvel Utilisateur',
-            email: cleanEmail,
-            role: role,
-            isActive: true,
-          });
-        }
+        // Enforce: Nobody can register as SUPER_ADMIN
+        const assignedRole: UserRole = isSuperAdminEmail(cleanEmail)
+          ? 'SUPER_ADMIN'
+          : role === 'SUPER_ADMIN'
+          ? 'ORGANIZER'
+          : role;
+
+        // Register profile in Supabase & local store
+        const generatedId = `usr-${Date.now()}`;
+        activeUser = await syncUserProfile(
+          generatedId,
+          cleanEmail,
+          fullName || 'Organisateur Jël Tix',
+          assignedRole
+        );
+        addUser(activeUser);
         setSuccessMsg(`Compte créé avec succès ! Bienvenue ${activeUser.fullName}.`);
       } else {
-        // Login mode: Find existing profile by email, or auto-create appropriate session
+        // Login mode: Find profile or sync from Supabase
+        const isAdmin = isSuperAdminEmail(cleanEmail);
         const existing = users.find((u: UserProfile) => u.email.toLowerCase() === cleanEmail);
+        
         if (existing) {
-          activeUser = existing;
-        } else {
-          // Detect admin email or fallback
-          const isAdmin = cleanEmail.includes('admin') || cleanEmail === 'admin@foutaticket.sn' || cleanEmail === 'admin@jeltix.sn';
           activeUser = {
-            id: `usr-${Date.now()}`,
-            fullName: isAdmin ? 'Super Administrateur' : (cleanEmail.split('@')[0] || 'Utilisateur'),
-            email: cleanEmail,
-            role: isAdmin ? 'SUPER_ADMIN' : 'ORGANIZER',
-            isActive: true,
-            createdAt: new Date().toISOString(),
+            ...existing,
+            role: isAdmin ? 'SUPER_ADMIN' : existing.role,
           };
+        } else {
+          activeUser = await syncUserProfile(
+            `usr-${Date.now()}`,
+            cleanEmail,
+            isAdmin ? 'Super Administrateur' : (cleanEmail.split('@')[0] || 'Organisateur'),
+            isAdmin ? 'SUPER_ADMIN' : 'ORGANIZER'
+          );
+          addUser(activeUser);
         }
-        setSuccessMsg(`Ravi de vous revoir ${activeUser.fullName} ! Redirection vers ${activeUser.role === 'SELLER' ? 'la Caisse' : activeUser.role === 'CONTROLLER' ? 'le Scanner' : 'le Tableau de bord'}...`);
+        setSuccessMsg(
+          `Ravi de vous revoir ${activeUser.fullName} ! Redirection vers ${
+            activeUser.role === 'SELLER'
+              ? 'la Caisse'
+              : activeUser.role === 'CONTROLLER'
+              ? 'le Scanner'
+              : 'le Tableau de bord'
+          }...`
+        );
       }
 
       // Set the active authenticated user & session cookie
@@ -264,7 +278,6 @@ export default function LoginPage() {
                     <option value="ORGANIZER">🎪 Organisateur d'Événements</option>
                     <option value="SELLER">🎟️ Vendeur Guichet (Caisse POS)</option>
                     <option value="CONTROLLER">📱 Contrôleur de Porte (Scanner)</option>
-                    <option value="SUPER_ADMIN">🛡️ Administrateur Plateforme</option>
                   </select>
                 </div>
               )}

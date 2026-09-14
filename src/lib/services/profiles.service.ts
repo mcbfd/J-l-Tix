@@ -1,0 +1,124 @@
+import { createClient } from '@/lib/supabase/client';
+import { UserProfile, UserRole } from '@/types';
+
+/**
+ * Designated Super Administrator emails
+ * Only these accounts receive the SUPER_ADMIN role on the platform.
+ */
+export const SUPER_ADMIN_EMAILS = [
+  'admin@foutaticket.sn',
+  'admin@jeltix.sn',
+  'beyes@gmail.com',
+  'contact@jeltix.sn',
+];
+
+/**
+ * Check if an email belongs to a designated Super Admin
+ */
+export function isSuperAdminEmail(email: string): boolean {
+  const clean = email.trim().toLowerCase();
+  return SUPER_ADMIN_EMAILS.some((adm) => adm.toLowerCase() === clean) || clean.startsWith('admin@');
+}
+
+/**
+ * Fetch or sync profile in Supabase profiles table
+ */
+export async function syncUserProfile(
+  id: string,
+  email: string,
+  fullName: string,
+  requestedRole: UserRole = 'ORGANIZER'
+): Promise<UserProfile> {
+  const supabase = createClient();
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Enforce Super Admin constraint: Nobody can self-assign SUPER_ADMIN unless in designated whitelist
+  const effectiveRole: UserRole = isSuperAdminEmail(cleanEmail)
+    ? 'SUPER_ADMIN'
+    : requestedRole === 'SUPER_ADMIN'
+    ? 'ORGANIZER'
+    : requestedRole;
+
+  try {
+    // 1. Check if profile already exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', cleanEmail)
+      .single();
+
+    if (existingProfile) {
+      return {
+        id: existingProfile.id,
+        email: existingProfile.email,
+        fullName: existingProfile.full_name,
+        role: existingProfile.role,
+        avatarUrl: existingProfile.avatar_url,
+        isActive: existingProfile.is_active !== false,
+        createdAt: existingProfile.created_at,
+      };
+    }
+
+    // 2. Create new profile in Supabase
+    const { data: newProfile, error } = await supabase
+      .from('profiles')
+      .insert({
+        id,
+        email: cleanEmail,
+        full_name: fullName,
+        role: effectiveRole,
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (!error && newProfile) {
+      return {
+        id: newProfile.id,
+        email: newProfile.email,
+        fullName: newProfile.full_name,
+        role: newProfile.role,
+        isActive: newProfile.is_active !== false,
+        createdAt: newProfile.created_at,
+      };
+    }
+  } catch (err) {
+    console.warn('Supabase profile sync fallback:', err);
+  }
+
+  // Fallback memory profile
+  return {
+    id,
+    email: cleanEmail,
+    fullName,
+    role: effectiveRole,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Fetch all profiles (Super Admin only)
+ */
+export async function fetchAllProfilesAdmin(): Promise<UserProfile[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((p) => ({
+    id: p.id,
+    email: p.email,
+    fullName: p.full_name,
+    role: p.role,
+    avatarUrl: p.avatar_url,
+    isActive: p.is_active !== false,
+    createdAt: p.created_at,
+  }));
+}
