@@ -26,7 +26,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Dakar, Diamniadio',
     startDate: '2026-05-25T18:00:00Z',
     timeString: '18:00 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1200&q=80',
     description: 'La grande finale de la Coupe du Sénégal opposant les deux meilleures formations de la saison dans un stade ultra-moderne de 50 000 places. Contrôle d’accès digitalisé Jël Tix aux tourniquets.',
     importantInfo: [
       "Les portes ouvrent 3 heures avant le coup d'envoi. Prévoyez d'arriver en avance.",
@@ -84,7 +84,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Pikine, Dakar',
     startDate: '2026-06-07T16:30:00Z',
     timeString: '16:30 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1200&q=80',
     description: 'Le choc incontournable de l’arène sénégalaise pour le titre suprême du Roi des Arènes. Ambiance mémorable, bakk des lutteurs et tambours traditionnels.',
     importantInfo: [
       "Ouverture des portes dès 12h00.",
@@ -142,7 +142,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Dakar, Centre-Ville',
     startDate: '2026-06-20T20:00:00Z',
     timeString: '20:00 - 04:00 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1200&q=80',
     description: 'Le plus grand rassemblement des cultures urbaines d’Afrique de l’Ouest avec les meilleurs artistes Hip-Hop, Mbalax nouvelle génération et DJs internationaux.',
     importantInfo: [
       "Entrée interdite aux mineurs non accompagnés.",
@@ -188,7 +188,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Diamniadio, Dakar',
     startDate: '2026-07-02T17:00:00Z',
     timeString: '17:00 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?auto=format&fit=crop&w=1200&q=80',
     description: 'Les phases finales de la prestigieuse Basketball Africa League à la Dakar Arena. Les meilleures franchises africaines s’affrontent pour le titre continental.',
     importantInfo: [
       "Accès facilité via le Train Express Régional (TER).",
@@ -234,7 +234,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Diamniadio, Dakar',
     startDate: '2026-08-15T19:30:00Z',
     timeString: '19:30 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
     description: 'La prestigieuse cérémonie annuelle des Oscars de Vacances récompensant la jeunesse, la création culturelle, les artistes émergents et l\'excellence associative.',
     importantInfo: [
       "Tenue de soirée ou tenue traditionnelle de gala exigée.",
@@ -292,7 +292,7 @@ const INITIAL_EVENTS: EventItem[] = [
     locationDetails: 'Dakar, Plateau',
     startDate: '2026-09-05T20:30:00Z',
     timeString: '20:30 UTC',
-    bannerImage: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80',
+    bannerImage: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=80',
     description: 'Une nuit exceptionnelle réunissant les plus grands comédiens, troupes de théâtre et artistes de stand-up du Sénégal et de la sous-région.',
     importantInfo: [
       "Ouverture des portes à 19h30. Spectacle ponctuel à 20h30.",

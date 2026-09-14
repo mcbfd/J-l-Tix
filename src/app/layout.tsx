@@ -41,13 +41,50 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Fonts chargées côté navigateur uniquement — aucune requête SSR */}
+        {/* ── Fonts: preconnect d'abord pour handshake parallèle ────────────── */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        {/*
+          Inter: display=swap → texte visible immédiatement avec font système,
+          swap vers Inter dès téléchargement terminé (zero layout blocking).
+        */}
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          media="print"
+          // @ts-ignore — onload trick standard pour non-blocking CSS load
+          onLoad="this.media='all'"
         />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          />
+        </noscript>
+
+        {/*
+          Material Symbols: display=optional → n'est jamais render-blocking.
+          Les icônes s'affichent dès que la font est dispo, sinon fallback texte.
+        */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=optional"
+          media="print"
+          // @ts-ignore
+          onLoad="this.media='all'"
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=optional"
+          />
+        </noscript>
       </head>
       <body
         className="min-h-screen bg-white dark:bg-[#050D1E] text-slate-900 dark:text-white font-sans antialiased flex flex-col selection:bg-[#4EED15] selection:text-[#002D8C] transition-colors duration-200"
