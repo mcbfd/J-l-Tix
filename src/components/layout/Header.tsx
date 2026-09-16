@@ -96,7 +96,9 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
         .eq('email', cleanEmail)
         .maybeSingle();
 
-      const role = (profile?.role || (isSuperAdminEmail(cleanEmail) ? 'SUPER_ADMIN' : 'ORGANIZER')) as UserRole;
+      const role = isSuperAdminEmail(cleanEmail)
+        ? 'SUPER_ADMIN'
+        : ((profile?.role || 'ORGANIZER') as UserRole);
       const fullName = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || cleanEmail.split('@')[0];
 
       const userObj: UserProfile = {

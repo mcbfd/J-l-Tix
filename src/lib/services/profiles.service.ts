@@ -97,27 +97,44 @@ export async function syncUserProfile(
 }
 
 /**
- * Fetch all profiles (Super Admin only)
+ * Fetch all profiles across the entire platform (Super Admin only)
+ * Queries the server API route /api/users which synchronizes Supabase Auth and Profiles table
  */
 export async function fetchAllProfilesAdmin(): Promise<UserProfile[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error || !data) {
-    return [];
+  try {
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        return data.users;
+      }
+    }
+  } catch (err) {
+    console.warn('fetchAllProfilesAdmin API error, fallback to client Supabase:', err);
   }
 
-  return data.map((p) => ({
-    id: p.id,
-    email: p.email,
-    fullName: p.full_name,
-    role: p.role,
-    avatarUrl: p.avatar_url,
-    isActive: p.is_active !== false,
-    createdAt: p.created_at,
-  }));
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data.map((p) => ({
+      id: p.id,
+      email: p.email,
+      fullName: p.full_name,
+      role: p.role,
+      avatarUrl: p.avatar_url,
+      organization: p.organization,
+      isActive: p.is_active !== false,
+      createdAt: p.created_at,
+    }));
+  } catch {
+    return [];
+  }
 }
