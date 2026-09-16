@@ -3,10 +3,33 @@
 import { useJeltixStore } from '@/lib/store/jeltix-store';
 import { formatRelativeTime } from '@/lib/utils/format';
 import Link from 'next/link';
-import { QrCode, ShieldCheck, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
+import { QrCode, ShieldCheck, CheckCircle2, XCircle, ExternalLink, Lock } from 'lucide-react';
 
 export default function ScansPage() {
-  const { scans } = useJeltixStore();
+  const { scans, currentUser } = useJeltixStore();
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isController = currentUser?.role === 'CONTROLLER';
+  const isAuthorized = isSuperAdmin || isController;
+
+  if (currentUser && !isAuthorized) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+          <Lock className="w-7 h-7" />
+        </div>
+        <h2 className="text-lg font-black text-on-surface mb-1">Accès Restreint aux Scans</h2>
+        <p className="text-xs text-on-surface-variant max-w-sm mb-4 leading-relaxed">
+          Le journal des flux d'entrées et contrôles d'accès est réservé aux Agents de Contrôle et Super Administrateurs.
+        </p>
+        <Link
+          href={currentUser.role === 'SELLER' ? '/sales/pos' : '/dashboard'}
+          className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold inline-flex items-center gap-2"
+        >
+          <span>Retourner à mon espace</span>
+        </Link>
+      </div>
+    );
+  }
 
   const totalScans = scans.length;
   const validScans = scans.filter((s) => s.result === 'VALID').length;

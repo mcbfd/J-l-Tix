@@ -18,12 +18,34 @@ import {
   Image as ImageIcon,
   Loader2,
   AlertCircle,
+  Lock,
 } from 'lucide-react';
 import type { EventCategory } from '@/types';
 
 export default function NewEventPage() {
   const router = useRouter();
   const { currentUser, createEvent } = useJeltixStore();
+
+  // Seuls Super Admin et Organisateurs peuvent créer un événement
+  if (currentUser && currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'ORGANIZER') {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+          <Lock className="w-7 h-7" />
+        </div>
+        <h2 className="text-lg font-black text-on-surface mb-1">Accès Restreint</h2>
+        <p className="text-xs text-on-surface-variant max-w-sm mb-4 leading-relaxed">
+          La création d'événements est réservée aux Organisateurs et Super Administrateurs.
+        </p>
+        <Link
+          href={currentUser.role === 'SELLER' ? '/sales/pos' : '/scan'}
+          className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold inline-flex items-center gap-2"
+        >
+          <span>Aller à mon espace ({currentUser.role === 'SELLER' ? 'Guichet POS' : 'Scanner'})</span>
+        </Link>
+      </div>
+    );
+  }
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<EventCategory>('Football');

@@ -24,37 +24,37 @@ const NAV_ITEMS = [
     href: '/dashboard',
     label: 'Tableau de bord',
     materialIcon: 'dashboard',
-    roles: ['SUPER_ADMIN', 'ORGANIZER', 'EVENT_MANAGER', 'FINANCE'],
+    roles: ['SUPER_ADMIN', 'ORGANIZER'],
   },
   {
     href: '/events',
     label: 'Événements',
     materialIcon: 'event',
-    roles: ['SUPER_ADMIN', 'ORGANIZER', 'EVENT_MANAGER'],
+    roles: ['SUPER_ADMIN', 'ORGANIZER'],
   },
   {
     href: '/sales',
     label: 'Ventes & Recettes',
     materialIcon: 'payments',
-    roles: ['SUPER_ADMIN', 'ORGANIZER', 'EVENT_MANAGER', 'SELLER', 'FINANCE'],
+    roles: ['SUPER_ADMIN', 'ORGANIZER', 'SELLER'],
   },
   {
     href: '/scans',
     label: 'Contrôle & Scans',
     materialIcon: 'qr_code_scanner',
-    roles: ['SUPER_ADMIN', 'ORGANIZER', 'CONTROLLER'],
+    roles: ['SUPER_ADMIN', 'CONTROLLER'],
   },
   {
     href: '/reports',
     label: 'Rapports & Audit',
     materialIcon: 'bar_chart',
-    roles: ['SUPER_ADMIN', 'ORGANIZER', 'FINANCE'],
+    roles: ['SUPER_ADMIN', 'ORGANIZER'],
   },
   {
     href: '/users',
-    label: 'Équipe & Rôles',
+    label: 'Gestion Utilisateurs',
     materialIcon: 'group',
-    roles: ['SUPER_ADMIN', 'ORGANIZER'],
+    roles: ['SUPER_ADMIN'],
   },
 ];
 
@@ -154,7 +154,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
             Opérations Terrain
           </div>
 
-          {(userRole === 'SUPER_ADMIN' || userRole === 'ORGANIZER' || userRole === 'SELLER') && (
+          {(userRole === 'SUPER_ADMIN' || userRole === 'SELLER') && (
             <Link
               href="/sales/pos"
               prefetch={true}
@@ -172,7 +172,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
             </Link>
           )}
 
-          {(userRole === 'SUPER_ADMIN' || userRole === 'ORGANIZER' || userRole === 'CONTROLLER') && (
+          {(userRole === 'SUPER_ADMIN' || userRole === 'CONTROLLER') && (
             <Link
               href="/scan"
               prefetch={true}

@@ -971,6 +971,12 @@ function SuperAdminUsersView() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {usr.role === 'ORGANIZER' && (
+                            <span className="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800/40 inline-flex items-center gap-1 shadow-xs">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                              <span>Approuvé</span>
+                            </span>
+                          )}
                           <button
                             onClick={() => setPasswordTarget(usr)}
                             className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800/40 cursor-pointer transition-colors inline-flex items-center gap-1 shadow-xs"
@@ -1139,7 +1145,7 @@ function SuperAdminUsersView() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Root Page — Routes to correct view based on role
+// Root Page — Strictly reserved for SUPER_ADMIN per RBAC matrix
 // ─────────────────────────────────────────────────────────────
 export default function UsersPage() {
   const { currentUser } = useStore();
@@ -1148,10 +1154,9 @@ export default function UsersPage() {
   const isSuper =
     currentUser?.role === 'SUPER_ADMIN' ||
     (Boolean(currentUser?.email) && isSuperAdminEmail(currentUser!.email));
-  const role = isSuper ? 'SUPER_ADMIN' : currentUser?.role;
 
-  // Access denied for non-admin roles
-  if (currentUser && role !== 'SUPER_ADMIN' && role !== 'ORGANIZER') {
+  // Access denied for anyone who is not a Super Admin
+  if (currentUser && !isSuper) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
@@ -1159,7 +1164,7 @@ export default function UsersPage() {
         </div>
         <h2 className="text-xl font-black text-on-surface mb-2">Accès Restreint</h2>
         <p className="text-xs text-on-surface-variant max-w-md mb-6 leading-relaxed">
-          La gestion des utilisateurs et des permissions est réservée aux Organisateurs et Super Administrateurs.
+          La gestion globale des utilisateurs et des comptes est réservée exclusivement aux Super Administrateurs de Jël Tix.
         </p>
         <Link
           href="/dashboard"
@@ -1172,56 +1177,46 @@ export default function UsersPage() {
     );
   }
 
-  // If Super Admin, show tabs to switch between Global Platform View and Local Organizer Team View
-  if (isSuper) {
-    return (
-      <div className="flex flex-col gap-6">
-        {/* Navigation Tabs for Super Admin */}
-        <div className="inline-flex p-1 rounded-2xl bg-surface-container border border-outline-variant/30 self-start">
-          <button
-            onClick={() => setAdminTab('GLOBAL')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
-              adminTab === 'GLOBAL'
-                ? 'bg-primary text-on-primary shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Tous les Comptes Plateforme</span>
-          </button>
-          <button
-            onClick={() => setAdminTab('TEAM')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
-              adminTab === 'TEAM'
-                ? 'bg-primary text-on-primary shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Mon Équipe d'Organisation</span>
-          </button>
-        </div>
-
-        {adminTab === 'GLOBAL' ? (
-          <SuperAdminUsersView />
-        ) : (
-          <OrganizerTeamView
-            organizerId={currentUser?.id || 'admin-super'}
-            organizerName={currentUser?.fullName || 'Super Admin'}
-            organizerEmail={currentUser?.email || 'admin@jeltix.sn'}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Pure Organizer View
+  // Super Admin view: allows managing all platform accounts or viewing organizer team structure
   return (
-    <OrganizerTeamView
-      organizerId={currentUser?.id || 'organizer'}
-      organizerName={currentUser?.fullName || 'Organisateur'}
-      organizerEmail={currentUser?.email}
-    />
+    <div className="flex flex-col gap-6">
+      {/* Navigation Tabs for Super Admin */}
+      <div className="inline-flex p-1 rounded-2xl bg-surface-container border border-outline-variant/30 self-start">
+        <button
+          onClick={() => setAdminTab('GLOBAL')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+            adminTab === 'GLOBAL'
+              ? 'bg-primary text-on-primary shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Tous les Comptes Plateforme</span>
+        </button>
+        <button
+          onClick={() => setAdminTab('TEAM')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+            adminTab === 'TEAM'
+              ? 'bg-primary text-on-primary shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Mon Équipe d'Organisation</span>
+        </button>
+      </div>
+
+      {adminTab === 'GLOBAL' ? (
+        <SuperAdminUsersView />
+      ) : (
+        <OrganizerTeamView
+          organizerId={currentUser?.id || 'admin-super'}
+          organizerName={currentUser?.fullName || 'Super Admin'}
+          organizerEmail={currentUser?.email || 'admin@jeltix.sn'}
+        />
+      )}
+    </div>
   );
 }
+
 

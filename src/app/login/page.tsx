@@ -22,6 +22,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import type { UserRole, UserProfile } from '@/types';
+import { getDefaultRouteForRole } from '@/types';
 import { isSuperAdminEmail, syncUserProfile } from '@/lib/services/profiles.service';
 
 type AuthMode = 'login' | 'register';
@@ -195,16 +196,14 @@ export default function LoginPage() {
         localStorage.setItem('jeltix_current_user', JSON.stringify(activeUser));
       }
 
-      // Redirect based on the user's role
+      // Redirect based on the user's role according to the strict RBAC matrix
       let destination = redirectPath;
-      if (!destination) {
-        if (activeUser.role === 'SELLER') {
-          destination = '/sales/pos';
-        } else if (activeUser.role === 'CONTROLLER') {
-          destination = '/scan';
-        } else {
-          destination = '/dashboard';
-        }
+      if (activeUser.role === 'SELLER') {
+        destination = '/sales/pos';
+      } else if (activeUser.role === 'CONTROLLER') {
+        destination = '/scan';
+      } else if (!destination || destination === '/login') {
+        destination = getDefaultRouteForRole(activeUser.role);
       }
 
       setTimeout(() => {

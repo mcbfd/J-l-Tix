@@ -146,3 +146,106 @@ export interface DashboardKPIs {
   successfulScansCount: number;
   globalFillRate: number;
 }
+
+// ─────────────────────────────────────────────────────────────
+// RBAC Matrix Definitions & Permission Helpers
+// ─────────────────────────────────────────────────────────────
+
+export interface WithdrawalRequest {
+  id: string;
+  organizerId: string;
+  organizerName: string;
+  organizerEmail: string;
+  amount: number;
+  method: 'WAVE' | 'ORANGE_MONEY' | 'BANK_TRANSFER';
+  phoneNumber?: string;
+  bankDetails?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID';
+  requestedAt: string;
+  processedAt?: string;
+  note?: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  performedBy: string;
+  target?: string;
+  details?: string;
+  timestamp: string;
+  ipAddress?: string;
+}
+
+/** Voir dashboard : Super Admin (Global) | Organisateur (Ses évts) */
+export function canAccessDashboard(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ORGANIZER';
+}
+
+/** Créer / Modifier / Publier événements : Super Admin (Tous) | Organisateur (Les siens) */
+export function canManageEvents(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ORGANIZER';
+}
+
+/** Vente guichet (POS) : Super Admin | Vendeur (POS) */
+export function canAccessPOS(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'SELLER';
+}
+
+/** Scanner billets : Super Admin | Scanneur (Contrôleur) */
+export function canAccessScanner(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'CONTROLLER';
+}
+
+/** Voir ventes : Super Admin (Global) | Organisateur (Ses évts) | Vendeur (Ses ventes) */
+export function canAccessSales(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ORGANIZER' || role === 'SELLER';
+}
+
+/** Voir rapports : Super Admin (Global) | Organisateur (Ses évts) */
+export function canAccessReports(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ORGANIZER';
+}
+
+/** Gérer utilisateurs : Super Admin (Global) UNIQUEMENT */
+export function canManageUsers(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN';
+}
+
+/** Approuver organisateurs : Super Admin UNIQUEMENT */
+export function canApproveOrganizers(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN';
+}
+
+/** Traiter retraits : Super Admin UNIQUEMENT */
+export function canProcessWithdrawals(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN';
+}
+
+/** Demander retrait : Organisateur UNIQUEMENT */
+export function canRequestWithdrawal(role?: UserRole): boolean {
+  return role === 'ORGANIZER';
+}
+
+/** Exporter données : Super Admin (Global) | Organisateur (Ses évts) */
+export function canExportData(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ORGANIZER';
+}
+
+/** Audit logs : Super Admin UNIQUEMENT */
+export function canViewAuditLogs(role?: UserRole): boolean {
+  return role === 'SUPER_ADMIN';
+}
+
+/** Redirection automatique par rôle lors de l'accès */
+export function getDefaultRouteForRole(role?: UserRole): string {
+  switch (role) {
+    case 'SELLER':
+      return '/sales/pos';
+    case 'CONTROLLER':
+      return '/scan';
+    case 'SUPER_ADMIN':
+    case 'ORGANIZER':
+    default:
+      return '/dashboard';
+  }
+}

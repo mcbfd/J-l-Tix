@@ -5,7 +5,7 @@ import { useJeltixStore } from '@/lib/store/jeltix-store';
 import { formatFCFA } from '@/lib/utils/format';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, RefreshCw, CreditCard, Smartphone, Banknote, ShoppingBag } from 'lucide-react';
+import { Loader2, RefreshCw, CreditCard, Smartphone, Banknote, ShoppingBag, Lock } from 'lucide-react';
 
 interface SupabaseOrder {
   id: string;
@@ -32,6 +32,8 @@ export default function SalesPage() {
   const { currentUser } = useJeltixStore();
   const isAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isOrganizer = currentUser?.role === 'ORGANIZER';
+  const isSeller = currentUser?.role === 'SELLER';
+  const isController = currentUser?.role === 'CONTROLLER';
 
   const [orders, setOrders] = useState<SupabaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,7 @@ export default function SalesPage() {
   const [mobileMoneyPct, setMobileMoneyPct] = useState(0);
 
   const loadOrders = useCallback(async () => {
+    if (isController) return;
     setLoading(true);
     try {
       const supabase = createClient();
@@ -49,8 +52,11 @@ export default function SalesPage() {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (isOrganizer && currentUser?.id) {
-        // scope by organizer events
+      if (isSeller) {
+        // Le vendeur guichet voit uniquement ses ventes au comptoir POS
+        query = query.eq('channel', 'POS') as typeof query;
+      } else if (isOrganizer && currentUser?.id) {
+        // L'organisateur voit uniquement les ventes de ses événements
         const { data: orgEvents } = await supabase
           .from('events')
           .select('id')
@@ -80,12 +86,32 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, isOrganizer, currentUser?.id]);
+  }, [isAdmin, isOrganizer, isSeller, isController, currentUser?.id]);
 
   useEffect(() => {
-    if (isAdmin || isOrganizer) loadOrders();
+    if (isAdmin || isOrganizer || isSeller) loadOrders();
     else setLoading(false);
-  }, [loadOrders, isAdmin, isOrganizer]);
+  }, [loadOrders, isAdmin, isOrganizer, isSeller]);
+
+  if (isController) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+          <Lock className="w-7 h-7" />
+        </div>
+        <h2 className="text-lg font-black text-on-surface mb-1">Accès Restreint</h2>
+        <p className="text-xs text-on-surface-variant max-w-sm mb-4 leading-relaxed">
+          Le registre des ventes est réservé aux Vendeurs Guichet, Organisateurs et Super Administrateurs.
+        </p>
+        <Link
+          href="/scan"
+          className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold inline-flex items-center gap-2"
+        >
+          <span>Accéder au Scanner Contrôleur</span>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full gap-6">

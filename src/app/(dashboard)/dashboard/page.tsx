@@ -7,7 +7,8 @@ import { StatCard } from '@/components/ui/StatCard';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { LiveScansFeed } from '@/components/dashboard/LiveScansFeed';
 import Link from 'next/link';
-import { Plus, Users, ArrowRight, Calendar, RefreshCw, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Users, ArrowRight, Calendar, RefreshCw, Loader2, Lock } from 'lucide-react';
 import {
   fetchPlatformKPIs,
   fetchOrganizerKPIs,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/services/analytics.service';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { currentUser } = useJeltixStore();
   const role = currentUser?.role;
   const isAdmin = role === 'SUPER_ADMIN';
@@ -24,7 +26,17 @@ export default function DashboardPage() {
   const [kpis, setKpis] = useState<PlatformKPIs | OrganizerKPIs | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Redirection automatique pour les rôles terrain (Vendeur POS -> /sales/pos, Scanneur -> /scan)
+  useEffect(() => {
+    if (role === 'SELLER') {
+      router.replace('/sales/pos');
+    } else if (role === 'CONTROLLER') {
+      router.replace('/scan');
+    }
+  }, [role, router]);
+
   const loadKPIs = useCallback(async () => {
+    if (!isAdmin && !isOrganizer) return;
     setLoading(true);
     try {
       if (isAdmin) {
@@ -42,6 +54,17 @@ export default function DashboardPage() {
   useEffect(() => {
     loadKPIs();
   }, [loadKPIs]);
+
+  if (role === 'SELLER' || role === 'CONTROLLER') {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center text-center gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-xs text-on-surface-variant font-mono">
+          Redirection vers votre espace de travail ({role === 'SELLER' ? 'Guichet Caisse POS' : 'Scanner Contrôleur'})…
+        </p>
+      </div>
+    );
+  }
 
   const pKpis = kpis as PlatformKPIs | null;
   const oKpis = kpis as OrganizerKPIs | null;

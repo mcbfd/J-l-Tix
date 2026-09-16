@@ -13,6 +13,7 @@ const QRCodeSVG = dynamic(() => import('qrcode.react').then((m) => m.QRCodeSVG),
   ssr: false,
 });
 
+import Link from 'next/link';
 import {
   Printer,
   CreditCard,
@@ -27,6 +28,7 @@ import {
   X,
   Sparkles,
   Calculator,
+  Lock,
 } from 'lucide-react';
 
 interface CartItem {
@@ -39,7 +41,11 @@ interface CartItem {
 const CASH_DENOMINATIONS = [500, 1000, 2000, 5000, 10000, 20000];
 
 export default function POSPage() {
-  const { events, purchaseTickets } = useJeltixStore();
+  const { events, purchaseTickets, currentUser } = useJeltixStore();
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isSeller = currentUser?.role === 'SELLER';
+  const isAuthorized = isSuperAdmin || isSeller;
+
   const publishedEvents = events.filter((e) => e.status === 'PUBLISHED');
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -60,6 +66,27 @@ export default function POSPage() {
   const [cashTendered, setCashTendered] = useState<number | ''>('');
 
   if (!mounted) return null;
+
+  // Accès restreint : Seuls Super Admin et Vendeur (POS) peuvent opérer la caisse
+  if (currentUser && !isAuthorized) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black text-on-surface mb-2">Accès Restreint au Guichet POS</h2>
+        <p className="text-xs text-on-surface-variant max-w-md mb-6 leading-relaxed">
+          Le module de vente physique et d'encaissement guichet est réservé aux Vendeurs (POS) et Super Administrateurs.
+        </p>
+        <Link
+          href="/dashboard"
+          className="px-5 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold inline-flex items-center gap-2"
+        >
+          <span>Retourner au Tableau de Bord</span>
+        </Link>
+      </div>
+    );
+  }
 
   const addToCart = (ticketTypeId: string, name: string, price: number) => {
     setCart((prev) => {

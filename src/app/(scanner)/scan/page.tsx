@@ -60,15 +60,40 @@ function extractTicketCode(raw: string): string {
 }
 
 export default function PwaScannerPage() {
-  const { validateScanAtomic, scans } = useJeltixStore();
+  const { validateScanAtomic, scans, currentUser } = useJeltixStore();
   const { theme } = useTheme();
 
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isController = currentUser?.role === 'CONTROLLER';
+  const isAuthorized = isSuperAdmin || isController;
+
   const [selectedGate, setSelectedGate] = useState('Porte A - Entrée Principale');
-  const [controllerName] = useState('Agent Contrôle #12');
+  const [controllerName] = useState(currentUser?.fullName || 'Agent Contrôle #12');
   const [manualCode, setManualCode] = useState('');
   const [manualError, setManualError] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // Accès restreint : Seuls Super Admin et Contrôleur peuvent scanner
+  if (currentUser && !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mb-4">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black mb-2">Accès Restreint au Scanner</h2>
+        <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+          Le module de contrôle d'accès et scan de billets est réservé aux Agents de Contrôle et Super Administrateurs.
+        </p>
+        <Link
+          href={currentUser.role === 'SELLER' ? '/sales/pos' : '/dashboard'}
+          className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold inline-flex items-center gap-2"
+        >
+          <span>Retourner à mon espace</span>
+        </Link>
+      </div>
+    );
+  }
 
   // Camera & Scanner State
   const [cameraActive, setCameraActive] = useState(false);
