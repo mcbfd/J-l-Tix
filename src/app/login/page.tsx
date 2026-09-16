@@ -309,41 +309,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Active Session Notice if logged in */}
-            {currentUser && !isLogout && (
-              <div className="mb-5 p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-[#0038A8]/20 dark:border-[#4EED15]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-w-sm mx-auto w-full">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-[#0038A8] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                    {currentUser.fullName?.charAt(0) || 'U'}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {currentUser.fullName}
-                    </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">
-                      {currentUser.email} • {currentUser.role}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
-                  <Link
-                    href={currentUser.role === 'SELLER' ? '/sales/pos' : currentUser.role === 'CONTROLLER' ? '/scan' : '/dashboard'}
-                    className="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg bg-[#0038A8] hover:bg-[#002D8C] text-white text-[11px] font-bold text-center transition-all shadow-xs"
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-white/10 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                  >
-                    <LogOut className="w-3 h-3" />
-                    <span>Quitter</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-3.5 max-w-sm mx-auto w-full">
               {/* Name field in Register mode */}
               {mode === 'register' && (
