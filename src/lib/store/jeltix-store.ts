@@ -50,7 +50,7 @@ class JeltixStore {
         const savedScans = localStorage.getItem('jeltix_scans_v2');
         const savedUsers = localStorage.getItem('jeltix_users_v2');
         const savedOrders = localStorage.getItem('jeltix_orders_v2');
-        const savedCurrentUser = localStorage.getItem('jeltix_current_user_v2');
+        const savedCurrentUser = localStorage.getItem('jeltix_current_user_v2') || localStorage.getItem('jeltix_current_user');
 
         if (savedEvents) {
           const parsed = JSON.parse(savedEvents);
@@ -60,7 +60,11 @@ class JeltixStore {
         if (savedScans) this.scans = JSON.parse(savedScans);
         if (savedUsers) this.users = JSON.parse(savedUsers);
         if (savedOrders) this.orders = JSON.parse(savedOrders);
-        if (savedCurrentUser) this.currentUser = JSON.parse(savedCurrentUser);
+        if (savedCurrentUser) {
+          try {
+            this.currentUser = JSON.parse(savedCurrentUser);
+          } catch {}
+        }
       } catch (err) {
         console.warn('Erreur lors du chargement des données locales Jël Tix:', err);
       }
@@ -76,6 +80,7 @@ class JeltixStore {
       localStorage.setItem('jeltix_orders_v2', JSON.stringify(this.orders));
       if (this.currentUser) {
         localStorage.setItem('jeltix_current_user_v2', JSON.stringify(this.currentUser));
+        localStorage.setItem('jeltix_current_user', JSON.stringify(this.currentUser));
       }
     }
     this.listeners.forEach((l) => l());
