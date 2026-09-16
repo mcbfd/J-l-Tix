@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '@/lib/store/jeltix-store';
 import { UserRole, UserProfile } from '@/types';
-import { syncUserProfile } from '@/lib/services/profiles.service';
+import { syncUserProfile, fetchAllProfilesAdmin } from '@/lib/services/profiles.service';
 import { InviteUserSchema } from '@/lib/validations';
 import {
   createTeamMember,
   getTeamMembers,
   toggleTeamMemberStatus,
   removeFromTeam,
+  changeUserPassword,
 } from '@/lib/services/team-management.service';
 import Link from 'next/link';
 import {
@@ -27,6 +28,9 @@ import {
   ShoppingCart,
   AlertTriangle,
   Loader2,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -71,6 +75,189 @@ function Toast({ message, type = 'success' }: { message: string; type?: 'success
 }
 
 // ─────────────────────────────────────────────────────────────
+// Modal — Modifier le mot de passe (Admin & Organisateur)
+// ─────────────────────────────────────────────────────────────
+interface ChangePasswordModalProps {
+  targetUser: { id?: string; fullName: string; email: string; role: string };
+  callerEmail?: string;
+  isSuperAdmin?: boolean;
+  onClose: () => void;
+  onSuccess: (msg: string) => void;
+}
+
+function ChangePasswordModal({
+  targetUser,
+  callerEmail,
+  isSuperAdmin = false,
+  onClose,
+  onSuccess,
+}: ChangePasswordModalProps) {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (newPassword.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Les deux mots de passe ne correspondent pas.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await changeUserPassword({
+      targetEmail: targetUser.email,
+      targetUserId: targetUser.id,
+      newPassword,
+      callerEmail,
+    });
+    setLoading(false);
+
+    if (!res.success) {
+      setError(res.error || 'Erreur lors de la modification.');
+      return;
+    }
+
+    onSuccess(res.message || 'Mot de passe mis à jour avec succès.');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-[#0B1936] text-slate-900 dark:text-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in zoom-in-95 duration-200 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-black">Changer le mot de passe</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {isSuperAdmin ? 'Super Administration Jël Tix' : 'Gestion d’équipe Organisateur'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 cursor-pointer text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Target user recap */}
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-[#0038A8]/10 text-[#0038A8] dark:text-[#4EED15] font-black flex items-center justify-center text-xs shrink-0">
+              {targetUser.fullName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                {targetUser.fullName}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                {targetUser.email}
+              </p>
+            </div>
+          </div>
+          <RoleBadge role={targetUser.role as UserRole} />
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+          <div>
+            <label className="block font-bold mb-1.5 text-slate-700 dark:text-slate-200">
+              Nouveau mot de passe *
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimum 6 caractères"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/15 outline-none focus:ring-2 focus:ring-primary text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold mb-1.5 text-slate-700 dark:text-slate-200">
+              Confirmer le mot de passe *
+            </label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              minLength={6}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Répétez le nouveau mot de passe"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/15 outline-none focus:ring-2 focus:ring-primary text-xs"
+            />
+          </div>
+
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            {isSuperAdmin
+              ? "En tant qu'Administrateur, ce mot de passe sera immédiatement actif pour cet utilisateur sur l'ensemble de la plateforme."
+              : "En tant qu'Organisateur, vous attribuez ce mot de passe à votre agent de terrain (contrôleur ou guichetier)."}
+          </p>
+
+          <div className="pt-2 flex gap-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-3 rounded-xl bg-[#0038A8] hover:bg-[#002D8C] text-white font-bold cursor-pointer shadow-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Enregistrement…</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-4 h-4" />
+                  <span>Définir le mot de passe</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-3 rounded-xl bg-slate-100 dark:bg-white/10 font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // ORGANIZER — Team Management View
 // ─────────────────────────────────────────────────────────────
 function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string; organizerName: string }) {
@@ -79,6 +266,7 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<UserProfile | null>(null);
 
   // Form state
   const [fullName, setFullName] = useState('');
@@ -266,6 +454,14 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => setPasswordTarget(m)}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800/40 cursor-pointer transition-colors inline-flex items-center gap-1 shadow-xs"
+                          title="Changer le mot de passe du membre"
+                        >
+                          <KeyRound className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>Mot de passe</span>
+                        </button>
+                        <button
                           onClick={() => handleToggleStatus(m)}
                           className="px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-[11px] border border-outline-variant/30 cursor-pointer transition-colors inline-flex items-center gap-1"
                           title={m.isActive ? 'Désactiver' : 'Activer'}
@@ -385,6 +581,17 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
           </div>
         </div>
       )}
+
+      {/* Password Change Modal */}
+      {passwordTarget && (
+        <ChangePasswordModal
+          targetUser={passwordTarget}
+          callerEmail={organizerId}
+          isSuperAdmin={false}
+          onClose={() => setPasswordTarget(null)}
+          onSuccess={(msg) => showToast(msg, 'success')}
+        />
+      )}
     </div>
   );
 }
@@ -393,7 +600,9 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
 // SUPER_ADMIN — Global User Management View (existing behavior)
 // ─────────────────────────────────────────────────────────────
 function SuperAdminUsersView() {
-  const { users, addUser, toggleUserStatus } = useStore();
+  const { users: storeUsers, addUser, toggleUserStatus, currentUser } = useStore();
+  const [dbUsers, setDbUsers] = useState<UserProfile[]>([]);
+  const [passwordTarget, setPasswordTarget] = useState<UserProfile | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -403,6 +612,23 @@ function SuperAdminUsersView() {
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  const loadDbUsers = useCallback(async () => {
+    try {
+      const data = await fetchAllProfilesAdmin();
+      if (data && data.length > 0) {
+        setDbUsers(data);
+      }
+    } catch (err) {
+      console.warn('Load profiles error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDbUsers();
+  }, [loadDbUsers]);
+
+  const displayUsers = dbUsers.length > 0 ? dbUsers : storeUsers;
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -415,6 +641,7 @@ function SuperAdminUsersView() {
     showToast(`Utilisateur ${validData.fullName} invité avec succès !`);
     setShowInviteModal(false);
     setFullName(''); setEmail(''); setPhone('');
+    loadDbUsers();
   };
 
   return (
@@ -435,7 +662,7 @@ function SuperAdminUsersView() {
       <div className="bg-surface-container rounded-3xl border border-outline-variant/30 overflow-hidden shadow-sm">
         <div className="p-4 bg-surface-container-low border-b border-surface-container-high flex justify-between items-center">
           <h2 className="text-sm font-bold text-on-surface">Comptes Opérateurs Jël Tix</h2>
-          <span className="text-xs text-on-surface-variant font-mono">{users.length} comptes enregistrés</span>
+          <span className="text-xs text-on-surface-variant font-mono">{displayUsers.length} comptes enregistrés</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
@@ -450,14 +677,14 @@ function SuperAdminUsersView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container-high/60">
-              {users.map((usr) => (
+              {displayUsers.map((usr) => (
                 <tr key={usr.id} className="hover:bg-surface-container-highest transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-black flex items-center justify-center text-xs">{usr.fullName.charAt(0)}</div>
                       <div>
                         <p className="font-extrabold text-on-surface text-sm">{usr.fullName}</p>
-                        <p className="text-[11px] text-on-surface-variant font-mono">{usr.phone}</p>
+                        <p className="text-[11px] text-on-surface-variant font-mono">{usr.phone || '—'}</p>
                       </div>
                     </div>
                   </td>
@@ -466,13 +693,23 @@ function SuperAdminUsersView() {
                   <td className="p-4"><RoleBadge role={usr.role} /></td>
                   <td className="p-4 text-center"><StatusDot active={usr.isActive} /></td>
                   <td className="p-4 text-right">
-                    <button
-                      onClick={() => { toggleUserStatus(usr.id); showToast(`Statut de ${usr.fullName} modifié.`); }}
-                      className="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-[11px] border border-outline-variant/30 cursor-pointer transition-colors inline-flex items-center gap-1"
-                    >
-                      <Power className="w-3 h-3 text-primary" />
-                      <span>{usr.isActive ? 'Désactiver' : 'Activer'}</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setPasswordTarget(usr)}
+                        className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800/40 cursor-pointer transition-colors inline-flex items-center gap-1 shadow-xs"
+                        title="Changer le mot de passe"
+                      >
+                        <KeyRound className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span>Mot de passe</span>
+                      </button>
+                      <button
+                        onClick={() => { toggleUserStatus(usr.id); showToast(`Statut de ${usr.fullName} modifié.`); }}
+                        className="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-[11px] border border-outline-variant/30 cursor-pointer transition-colors inline-flex items-center gap-1"
+                      >
+                        <Power className="w-3 h-3 text-primary" />
+                        <span>{usr.isActive ? 'Désactiver' : 'Activer'}</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -523,6 +760,20 @@ function SuperAdminUsersView() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Password Change Modal for Super Admin */}
+      {passwordTarget && (
+        <ChangePasswordModal
+          targetUser={passwordTarget}
+          callerEmail={currentUser?.email}
+          isSuperAdmin={true}
+          onClose={() => setPasswordTarget(null)}
+          onSuccess={(msg) => {
+            showToast(msg);
+            loadDbUsers();
+          }}
+        />
       )}
     </div>
   );

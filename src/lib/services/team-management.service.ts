@@ -190,3 +190,31 @@ export async function removeFromTeam(
 
   return { success: true };
 }
+
+/**
+ * Change / reset password for a user
+ * - SUPER_ADMIN can change password for any user
+ * - ORGANIZER can change password for members of their own team
+ */
+export async function changeUserPassword(params: {
+  targetEmail: string;
+  targetUserId?: string;
+  newPassword: string;
+  callerEmail?: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/users/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || 'Erreur lors du changement de mot de passe.' };
+    }
+    return { success: true, message: data.message };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Erreur réseau.' };
+  }
+}
+
