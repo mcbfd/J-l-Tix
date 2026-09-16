@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { useStore } from '@/lib/store/jeltix-store';
+import { createClient } from '@/lib/supabase/client';
+import { getRoleLabel } from '@/components/layout/Header';
 import {
   LayoutDashboard,
   Calendar,
@@ -63,8 +65,26 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
-  const { currentUser } = useStore();
+  const router = useRouter();
+  const { currentUser, setCurrentUser } = useStore();
   const userRole = currentUser?.role || 'SUPER_ADMIN';
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Logout error:', err);
+    }
+    setCurrentUser(null as any);
+    if (typeof document !== 'undefined') {
+      document.cookie = 'jeltix_auth_session=; path=/; max-age=0; SameSite=Lax';
+      localStorage.removeItem('jeltix_current_user');
+      localStorage.removeItem('jeltix_current_user_v2');
+    }
+    router.push('/login?logout=true');
+    router.refresh();
+  };
 
   const accessibleNavItems = NAV_ITEMS.filter((item) => item.roles.includes(userRole));
 
@@ -187,32 +207,28 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
           </Link>
         </nav>
 
-        {/* User Session & Role Switch Footer */}
+        {/* User Session & Logout Footer */}
         <div className="p-3 m-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#2CA808] dark:bg-[#4EED15] animate-pulse" />
-              <span className="text-[11px] font-black text-[#0038A8] dark:text-white truncate max-w-[120px]">
-                {currentUser?.fullName || 'Utilisateur'}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-[#2CA808] dark:bg-[#4EED15] animate-pulse shrink-0" />
+              <span className="text-[11px] font-black text-[#0038A8] dark:text-white truncate">
+                {currentUser?.fullName || (currentUser?.email ? currentUser.email.split('@')[0] : 'Utilisateur')}
               </span>
             </div>
-            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#0038A8]/10 dark:bg-[#4EED15]/20 text-[#0038A8] dark:text-[#4EED15]">
-              {userRole}
+            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#0038A8]/10 dark:bg-[#4EED15]/20 text-[#0038A8] dark:text-[#4EED15] shrink-0">
+              {getRoleLabel(currentUser?.role, currentUser?.email)}
             </span>
           </div>
 
-          <Link
-            href="/login?logout=true"
-            onClick={() => {
-              if (typeof document !== 'undefined') {
-                document.cookie = 'jeltix_auth_session=; path=/; max-age=0; SameSite=Lax';
-              }
-            }}
-            className="w-full py-1.5 px-2 rounded-lg bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors"
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full py-2 px-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border border-red-200/50 dark:border-red-800/30 active:scale-95"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Changer de rôle / Quitter</span>
-          </Link>
+            <span>Déconnecter</span>
+          </button>
         </div>
       </aside>
     </>

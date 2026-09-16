@@ -45,21 +45,39 @@ class JeltixStore {
 
     if (typeof window !== 'undefined') {
       try {
-        const savedEvents = localStorage.getItem('jeltix_events_v2');
-        const savedTickets = localStorage.getItem('jeltix_tickets_v2');
-        const savedScans = localStorage.getItem('jeltix_scans_v2');
-        const savedUsers = localStorage.getItem('jeltix_users_v2');
-        const savedOrders = localStorage.getItem('jeltix_orders_v2');
+        // Remise à zéro propre des anciennes données de test/démo (v2)
+        const hasCleanedLegacy = localStorage.getItem('jeltix_clean_zero_v3');
+        if (!hasCleanedLegacy) {
+          localStorage.removeItem('jeltix_events_v2');
+          localStorage.removeItem('jeltix_tickets_v2');
+          localStorage.removeItem('jeltix_scans_v2');
+          localStorage.removeItem('jeltix_orders_v2');
+          localStorage.removeItem('jeltix_users_v2');
+          localStorage.setItem('jeltix_clean_zero_v3', 'true');
+        }
+
+        const savedEvents = localStorage.getItem('jeltix_events_v3');
+        const savedTickets = localStorage.getItem('jeltix_tickets_v3');
+        const savedScans = localStorage.getItem('jeltix_scans_v3');
+        const savedUsers = localStorage.getItem('jeltix_users_v3');
+        const savedOrders = localStorage.getItem('jeltix_orders_v3');
         const savedCurrentUser = localStorage.getItem('jeltix_current_user_v2') || localStorage.getItem('jeltix_current_user');
 
         if (savedEvents) {
-          const parsed = JSON.parse(savedEvents);
-          this.events = parsed;
+          try { this.events = JSON.parse(savedEvents); } catch {}
         }
-        if (savedTickets) this.tickets = JSON.parse(savedTickets);
-        if (savedScans) this.scans = JSON.parse(savedScans);
-        if (savedUsers) this.users = JSON.parse(savedUsers);
-        if (savedOrders) this.orders = JSON.parse(savedOrders);
+        if (savedTickets) {
+          try { this.tickets = JSON.parse(savedTickets); } catch {}
+        }
+        if (savedScans) {
+          try { this.scans = JSON.parse(savedScans); } catch {}
+        }
+        if (savedUsers) {
+          try { this.users = JSON.parse(savedUsers); } catch {}
+        }
+        if (savedOrders) {
+          try { this.orders = JSON.parse(savedOrders); } catch {}
+        }
         if (savedCurrentUser) {
           try {
             this.currentUser = JSON.parse(savedCurrentUser);
@@ -73,11 +91,11 @@ class JeltixStore {
 
   private save() {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('jeltix_events_v2', JSON.stringify(this.events));
-      localStorage.setItem('jeltix_tickets_v2', JSON.stringify(this.tickets));
-      localStorage.setItem('jeltix_scans_v2', JSON.stringify(this.scans));
-      localStorage.setItem('jeltix_users_v2', JSON.stringify(this.users));
-      localStorage.setItem('jeltix_orders_v2', JSON.stringify(this.orders));
+      localStorage.setItem('jeltix_events_v3', JSON.stringify(this.events));
+      localStorage.setItem('jeltix_tickets_v3', JSON.stringify(this.tickets));
+      localStorage.setItem('jeltix_scans_v3', JSON.stringify(this.scans));
+      localStorage.setItem('jeltix_users_v3', JSON.stringify(this.users));
+      localStorage.setItem('jeltix_orders_v3', JSON.stringify(this.orders));
       if (this.currentUser) {
         localStorage.setItem('jeltix_current_user_v2', JSON.stringify(this.currentUser));
         localStorage.setItem('jeltix_current_user', JSON.stringify(this.currentUser));

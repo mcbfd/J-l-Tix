@@ -76,8 +76,13 @@ export default function EventsManagementPage() {
   };
 
   const totalSold = scopedEvents.reduce((s, e) => s + e.soldCapacity, 0);
-  const totalCap = Math.max(1, scopedEvents.reduce((s, e) => s + e.totalCapacity, 0));
-  const avgFillRate = Math.round((totalSold / totalCap) * 100);
+  const totalCap = scopedEvents.reduce((s, e) => s + e.totalCapacity, 0);
+  const avgFillRate = totalCap > 0 ? Math.round((totalSold / totalCap) * 100) : 0;
+  const totalRevenue = scopedEvents.reduce((s, e) => {
+    const eventRev = (e.ticketTypes || []).reduce((catSum: number, cat) => catSum + (cat.soldQuantity || 0) * (cat.price || 0), 0);
+    return s + eventRev;
+  }, 0);
+  const activeEventsCount = scopedEvents.filter((e) => e.status === 'PUBLISHED').length;
 
   return (
     <div className="flex flex-col w-full relative gap-6">
@@ -120,7 +125,7 @@ export default function EventsManagementPage() {
               Événements Actifs
             </p>
             <p className="text-3xl font-black text-slate-900 dark:text-white mt-0.5">
-              {events.filter((e) => e.status === 'PUBLISHED').length}
+              {activeEventsCount}
             </p>
           </div>
         </div>
@@ -150,7 +155,15 @@ export default function EventsManagementPage() {
               Chiffre d'Affaires
             </p>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-              8.5M <span className="text-xs font-bold text-slate-600 dark:text-white/70">CFA</span>
+              {totalRevenue > 0 ? (
+                <>
+                  {totalRevenue.toLocaleString('fr-FR')} <span className="text-xs font-bold text-slate-600 dark:text-white/70">CFA</span>
+                </>
+              ) : (
+                <>
+                  0 <span className="text-xs font-bold text-slate-600 dark:text-white/70">CFA</span>
+                </>
+              )}
             </p>
           </div>
         </div>
