@@ -19,176 +19,173 @@ export type TeamRole = 'SELLER' | 'CONTROLLER';
 export interface CreateTeamMemberParams {
   /** UUID of the organizer creating the member */
   organizerId: string;
+  organizerEmail?: string;
   email: string;
   fullName: string;
   role: TeamRole;
   /** Optional phone number */
   phone?: string;
+  /** Optional initial password */
+  password?: string;
 }
 
 /**
- * Create a new team member (SELLER or CONTROLLER) in the profiles table.
- * This does NOT create a Supabase Auth user — the member can still sign in via
- * the email+password registration flow, and their profile will be pre-provisioned
- * with the correct role upon first login.
+ * Create a new team member (SELLER or CONTROLLER) via server API route
+ * This provisions both the Supabase Auth user and the profile record.
  */
 export async function createTeamMember(
   params: CreateTeamMemberParams
-): Promise<{ success: boolean; profile?: UserProfile; error?: string }> {
-  const supabase = createClient();
-  const cleanEmail = params.email.trim().toLowerCase();
+): Promise<{ success: boolean; profile?: UserProfile; defaultPassword?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/users/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
 
-  // Guard: only SELLER and CONTROLLER can be created via this service
-  if (!['SELLER', 'CONTROLLER'].includes(params.role)) {
-    return { success: false, error: 'Rôle non autorisé. Seuls SELLER et CONTROLLER peuvent être créés.' };
-  }
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || 'Erreur lors de la création du membre d’équipe.',
+      };
+    }
 
-  // Check if a profile already exists for this email
-  const { data: existing } = await supabase
-    .from('profiles')
-    .select('id, email, role')
-    .eq('email', cleanEmail)
-    .single();
-
-  if (existing) {
+    return {
+      success: true,
+      profile: data.profile,
+      defaultPassword: data.defaultPassword,
+    };
+  } catch (err: any) {
+    console.warn('createTeamMember network error:', err);
     return {
       success: false,
-      error: `Un compte existe déjà pour l'adresse ${cleanEmail}. Contactez l'administrateur pour modifier le rôle.`,
+      error: err?.message || 'Erreur réseau lors de la communication avec le serveur.',
     };
   }
-
-  // Pre-provision the profile so that when the member logs in for the first time,
-  // they'll be matched by email and receive the correct role
-  const { data: newProfile, error } = await supabase
-    .from('profiles')
-    .insert({
-      email: cleanEmail,
-      full_name: params.fullName,
-      role: params.role,
-      phone: params.phone ?? null,
-      organization_id: params.organizerId,
-      is_active: true,
-    })
-    .select()
-    .single();
-
-  if (error || !newProfile) {
-    console.error('createTeamMember error:', error?.message);
-    return {
-      success: false,
-      error: error?.message ?? 'Erreur lors de la création du membre.',
-    };
-  }
-
-  return {
-    success: true,
-    profile: {
-      id: newProfile.id,
-      email: newProfile.email,
-      fullName: newProfile.full_name,
-      role: newProfile.role as UserRole,
-      phone: newProfile.phone,
-      isActive: newProfile.is_active !== false,
-      createdAt: newProfile.created_at,
-    },
-  };
 }
 
 /**
- * Fetch all team members belonging to a given organizer (by organization_id)
+ * Fetch all team members belonging to a given organizer
  */
-export async function getTeamMembers(organizerId: string): Promise<UserProfile[]> {
-  const supabase = createClient();
+export async function getTeamMembers(organizerId: string, organizerEmail?: string): Promise<UserProfile[]> {
+  try {
+    const query = new URLSearchParams();
+    if (organizerId) query.set('organizerId', organizerId);
+    if (organizerEmail) query.set('organizerEmail', organizerEmail);
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('organization_id', organizerId)
-    .in('role', ['SELLER', 'CONTROLLER'])
-    .order('created_at', { ascending: false });
+    const res = await fetch(`/api/users/team?${query.toString()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.members)) {
+        return data.members;
+      }
+    }
+  } catch (err) {
+    console.warn('getTeamMembers API error, trying direct fallback:', err);
+  }
 
-  if (error || !data) return [];
+  // Client Supabase fallback
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', organizerId)
+      .in('role', ['SELLER', 'CONTROLLER'])
+      .order('created_at', { ascending: false });
 
-  return data.map((p) => ({
-    id: p.id,
-    email: p.email,
-    fullName: p.full_name,
-    role: p.role as UserRole,
-    phone: p.phone,
-    avatarUrl: p.avatar_url,
-    isActive: p.is_active !== false,
-    createdAt: p.created_at,
-  }));
+    if (error || !data) return [];
+
+    return data.map((p) => ({
+      id: p.id,
+      email: p.email,
+      fullName: p.full_name,
+      role: p.role as UserRole,
+      phone: p.phone,
+      avatarUrl: p.avatar_url,
+      isActive: p.is_active !== false,
+      createdAt: p.created_at,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 /**
  * Toggle active/inactive status of a team member
- * An ORGANIZER can only toggle members of their own team.
  */
 export async function toggleTeamMemberStatus(
   organizerId: string,
   memberId: string,
   isSuperAdmin = false
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient();
-
-  // Fetch current status and organization_id
-  const { data: member, error: fetchError } = await supabase
-    .from('profiles')
-    .select('is_active, organization_id, role')
-    .eq('id', memberId)
-    .single();
-
-  if (fetchError || !member) {
-    return { success: false, error: 'Membre introuvable.' };
+  try {
+    const res = await fetch('/api/users/team', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ organizerId, memberId, isSuperAdmin }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) return { success: true };
+  } catch (err) {
+    console.warn('toggleTeamMemberStatus API error:', err);
   }
 
-  // Guard: ORGANIZER can only toggle their own team members
-  if (!isSuperAdmin && member.organization_id !== organizerId) {
-    return { success: false, error: 'Accès refusé. Ce membre ne fait pas partie de votre équipe.' };
-  }
+  // Fallback client
+  try {
+    const supabase = createClient();
+    const { data: member } = await supabase
+      .from('profiles')
+      .select('is_active')
+      .eq('id', memberId)
+      .single();
 
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({ is_active: !member.is_active })
-    .eq('id', memberId);
+    if (member) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !member.is_active })
+        .eq('id', memberId);
 
-  if (updateError) {
-    return { success: false, error: updateError.message };
-  }
+      if (!error) return { success: true };
+    }
+  } catch {}
 
-  return { success: true };
+  return { success: false, error: 'Impossible de modifier le statut du membre.' };
 }
 
 /**
  * Remove a team member from the organizer's team
- * (sets organization_id to null, does not delete the profile)
  */
 export async function removeFromTeam(
   organizerId: string,
   memberId: string,
   isSuperAdmin = false
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient();
-
-  const { data: member } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', memberId)
-    .single();
-
-  if (!isSuperAdmin && member?.organization_id !== organizerId) {
-    return { success: false, error: 'Accès refusé. Ce membre ne fait pas partie de votre équipe.' };
+  try {
+    const res = await fetch('/api/users/team', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ organizerId, memberId, isSuperAdmin }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) return { success: true };
+  } catch (err) {
+    console.warn('removeFromTeam API error:', err);
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ organization_id: null })
-    .eq('id', memberId);
+  // Fallback client
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ organization_id: null })
+      .eq('id', memberId);
 
-  if (error) return { success: false, error: error.message };
+    if (!error) return { success: true };
+  } catch {}
 
-  return { success: true };
+  return { success: false, error: 'Impossible de retirer le membre.' };
 }
 
 /**

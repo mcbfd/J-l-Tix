@@ -260,7 +260,15 @@ function ChangePasswordModal({
 // ─────────────────────────────────────────────────────────────
 // ORGANIZER — Team Management View
 // ─────────────────────────────────────────────────────────────
-function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string; organizerName: string }) {
+function OrganizerTeamView({
+  organizerId,
+  organizerName,
+  organizerEmail,
+}: {
+  organizerId: string;
+  organizerName: string;
+  organizerEmail?: string;
+}) {
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -272,6 +280,7 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'SELLER' | 'CONTROLLER'>('CONTROLLER');
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -281,10 +290,10 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
-    const data = await getTeamMembers(organizerId);
+    const data = await getTeamMembers(organizerId, organizerEmail);
     setMembers(data);
     setLoading(false);
-  }, [organizerId]);
+  }, [organizerId, organizerEmail]);
 
   useEffect(() => {
     loadMembers();
@@ -296,17 +305,19 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
 
     const result = await createTeamMember({
       organizerId,
+      organizerEmail,
       email,
       fullName,
       role,
       phone: phone || undefined,
+      password: password.trim() || undefined,
     });
 
     if (result.success && result.profile) {
       setMembers((prev) => [result.profile!, ...prev]);
-      showToast(`${fullName} ajouté·e à votre équipe !`);
+      showToast(`${fullName} ajouté·e à votre équipe ! Mot de passe : ${result.defaultPassword || 'Jeltix2026!'}`);
       setShowModal(false);
-      setFullName(''); setEmail(''); setPhone('');
+      setFullName(''); setEmail(''); setPhone(''); setPassword('');
     } else {
       showToast(result.error || 'Erreur lors de la création.', 'error');
     }
@@ -561,6 +572,19 @@ function OrganizerTeamView({ organizerId, organizerName }: { organizerId: string
                 />
               </div>
 
+              <div>
+                <label className="block font-bold mb-1 text-slate-700 dark:text-slate-200">
+                  Mot de passe initial <span className="font-normal text-slate-400">(optionnel, défaut : Jeltix2026!)</span>
+                </label>
+                <input
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Jeltix2026!"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/15 outline-none focus:ring-2 focus:ring-primary text-xs font-mono"
+                />
+              </div>
+
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
@@ -806,7 +830,13 @@ export default function UsersPage() {
   }
 
   if (role === 'ORGANIZER' && currentUser?.id) {
-    return <OrganizerTeamView organizerId={currentUser.id} organizerName={currentUser.fullName} />;
+    return (
+      <OrganizerTeamView
+        organizerId={currentUser.id}
+        organizerName={currentUser.fullName}
+        organizerEmail={currentUser.email}
+      />
+    );
   }
 
   return <SuperAdminUsersView />;

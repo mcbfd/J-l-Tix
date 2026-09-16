@@ -212,11 +212,11 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2 h-2 rounded-full bg-[#2CA808] dark:bg-[#4EED15] animate-pulse shrink-0" />
-              <span className="text-[11px] font-black text-[#0038A8] dark:text-white truncate">
+              <span className="text-[11px] font-black text-[#0038A8] dark:text-white truncate" suppressHydrationWarning>
                 {currentUser?.fullName || (currentUser?.email ? currentUser.email.split('@')[0] : 'Utilisateur')}
               </span>
             </div>
-            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#0038A8]/10 dark:bg-[#4EED15]/20 text-[#0038A8] dark:text-[#4EED15] shrink-0">
+            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#0038A8]/10 dark:bg-[#4EED15]/20 text-[#0038A8] dark:text-[#4EED15] shrink-0" suppressHydrationWarning>
               {getRoleLabel(currentUser?.role, currentUser?.email)}
             </span>
           </div>
