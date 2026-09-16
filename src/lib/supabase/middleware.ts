@@ -64,12 +64,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If already logged in and visiting login, redirect to dashboard
-  if (pathname === '/login' && isAuthenticated && request.nextUrl.searchParams.get('logout') !== 'true') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
-  }
-
   return supabaseResponse;
 }

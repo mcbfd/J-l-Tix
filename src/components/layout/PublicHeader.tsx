@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { Menu, X, QrCode, CreditCard, LayoutDashboard, Calendar } from 'lucide-react';
+import { Menu, X, QrCode, CreditCard, LayoutDashboard, Calendar, LogIn } from 'lucide-react';
 
 export function PublicHeader() {
   const pathname = usePathname();
@@ -64,8 +64,8 @@ export function PublicHeader() {
             href="/login"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0038A8] to-[#0D52D6] hover:from-[#002D8C] hover:to-[#0B4FD8] text-white font-extrabold text-xs shadow-md shadow-[#0038A8]/20 transition-all hover:scale-[0.98] active:scale-95"
           >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Connexion / Rôles</span>
+            <LogIn className="w-4 h-4" />
+            <span>Connexion</span>
           </Link>
         </div>
 
@@ -121,12 +121,12 @@ export function PublicHeader() {
           </Link>
           <div className="pt-2 border-t border-slate-200 dark:border-white/10">
             <Link
-              href="/dashboard"
+              href="/login"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0038A8] to-[#0D52D6] text-white font-bold text-center text-sm flex items-center justify-center gap-2 shadow-md"
             >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Accès Espace Organisateur / Admin</span>
+              <LogIn className="w-4 h-4" />
+              <span>Connexion</span>
             </Link>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
@@ -18,7 +18,8 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import type { UserRole, UserProfile } from '@/types';
 import { isSuperAdminEmail, syncUserProfile } from '@/lib/services/profiles.service';
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
+  const isLogout = searchParams.get('logout') === 'true';
 
   const { setCurrentUser, users, addUser, currentUser } = useStore();
 
@@ -41,12 +43,35 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Detect Google OAuth return: if Supabase session exists but store has no currentUser, sync profile
+  const handleLogout = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Signout error:', err);
+    }
+    setCurrentUser(null as any);
+    if (typeof document !== 'undefined') {
+      document.cookie = 'jeltix_auth_session=; path=/; max-age=0; SameSite=Lax';
+      localStorage.removeItem('jeltix_current_user');
+      localStorage.removeItem('jeltix_current_user_v2');
+    }
+    setSuccessMsg('Vous avez été déconnecté avec succès.');
+  }, [setCurrentUser]);
+
   useEffect(() => {
-    const syncGoogleProfile = async () => {
-      if (currentUser) return; // Already synced
+    if (isLogout) {
+      handleLogout();
+    }
+  }, [isLogout, handleLogout]);
+
+  // Sync Supabase session to local store without automatically bouncing to dashboard
+  useEffect(() => {
+    if (isLogout) return;
+    const syncProfile = async () => {
+      if (currentUser) return;
       try {
-        const supabase = (await import('@/lib/supabase/client')).createClient();
+        const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user?.email) return;
 
@@ -68,19 +93,21 @@ export default function LoginPage() {
           localStorage.setItem('jeltix_current_user', JSON.stringify(profile));
         }
 
-        // Redirect based on role
-        const dest = profile.role === 'SELLER' ? '/sales/pos'
-          : profile.role === 'CONTROLLER' ? '/scan'
-          : redirectPath || '/dashboard';
-        router.push(dest);
-        router.refresh();
+        // Only auto-redirect if explicitly flagged by oauth return param
+        if (searchParams.get('oauth') === 'true') {
+          const dest = profile.role === 'SELLER' ? '/sales/pos'
+            : profile.role === 'CONTROLLER' ? '/scan'
+            : redirectPath || '/dashboard';
+          router.push(dest);
+          router.refresh();
+        }
       } catch (err) {
-        console.warn('Google profile sync error:', err);
+        console.warn('Profile sync error:', err);
       }
     };
-    syncGoogleProfile();
+    syncProfile();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLogout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,6 +306,41 @@ export default function LoginPage() {
               <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{successMsg}</span>
+              </div>
+            )}
+
+            {/* Active Session Notice if logged in */}
+            {currentUser && !isLogout && (
+              <div className="mb-5 p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-[#0038A8]/20 dark:border-[#4EED15]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-w-sm mx-auto w-full">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-[#0038A8] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    {currentUser.fullName?.charAt(0) || 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {currentUser.fullName}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                      {currentUser.email} • {currentUser.role}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
+                  <Link
+                    href={currentUser.role === 'SELLER' ? '/sales/pos' : currentUser.role === 'CONTROLLER' ? '/scan' : '/dashboard'}
+                    className="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg bg-[#0038A8] hover:bg-[#002D8C] text-white text-[11px] font-bold text-center transition-all shadow-xs"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-white/10 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    <span>Quitter</span>
+                  </button>
+                </div>
               </div>
             )}
 
