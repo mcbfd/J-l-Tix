@@ -32,7 +32,7 @@ export default function PublicEventDetailPage({
   const resolvedParams = use(params);
   const router = useRouter();
   const { getEventBySlug } = useJeltixStore();
-  const event = getEventBySlug(resolvedParams.slug) || getEventBySlug('match-pilote-finale-coupe');
+  const event = getEventBySlug(resolvedParams.slug);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [copiedLink, setCopiedLink] = useState(false);

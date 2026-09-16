@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
@@ -30,17 +30,57 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
 
-  const { setCurrentUser, users, addUser } = useStore();
+  const { setCurrentUser, users, addUser, currentUser } = useStore();
 
   const [mode, setMode] = useState<AuthMode>('login');
-  const [fullName, setFullName] = useState('Super Administrateur');
-  const [email, setEmail] = useState('admin@foutaticket.sn');
-  const [password, setPassword] = useState('demo2026!');
-  const [role, setRole] = useState<UserRole>('SUPER_ADMIN');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Detect Google OAuth return: if Supabase session exists but store has no currentUser, sync profile
+  useEffect(() => {
+    const syncGoogleProfile = async () => {
+      if (currentUser) return; // Already synced
+      try {
+        const supabase = (await import('@/lib/supabase/client')).createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.email) return;
+
+        const cleanEmail = user.email.trim().toLowerCase();
+        const { isSuperAdminEmail: isAdmin, syncUserProfile } = await import('@/lib/services/profiles.service');
+        const role = isAdmin(cleanEmail) ? 'SUPER_ADMIN' : 'ORGANIZER';
+
+        const profile = await syncUserProfile(
+          user.id,
+          cleanEmail,
+          user.user_metadata?.full_name || user.user_metadata?.name || cleanEmail.split('@')[0],
+          role
+        );
+
+        setCurrentUser(profile);
+        addUser(profile);
+        if (typeof document !== 'undefined') {
+          document.cookie = 'jeltix_auth_session=true; path=/; max-age=604800; SameSite=Lax';
+          localStorage.setItem('jeltix_current_user', JSON.stringify(profile));
+        }
+
+        // Redirect based on role
+        const dest = profile.role === 'SELLER' ? '/sales/pos'
+          : profile.role === 'CONTROLLER' ? '/scan'
+          : redirectPath || '/dashboard';
+        router.push(dest);
+        router.refresh();
+      } catch (err) {
+        console.warn('Google profile sync error:', err);
+      }
+    };
+    syncGoogleProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +107,7 @@ export default function LoginPage() {
           email: cleanEmail,
           password,
           options: {
-            data: { full_name: fullName, role },
+            data: { full_name: fullName, role: 'ORGANIZER' },
           },
         });
         if (error) {
@@ -78,12 +118,8 @@ export default function LoginPage() {
       let activeUser: UserProfile;
 
       if (mode === 'register') {
-        // Enforce: Nobody can register as SUPER_ADMIN
-        const assignedRole: UserRole = isSuperAdminEmail(cleanEmail)
-          ? 'SUPER_ADMIN'
-          : role === 'SUPER_ADMIN'
-          ? 'ORGANIZER'
-          : role;
+        // All self-registrations become ORGANIZER (SELLER/CONTROLLER are created by admins)
+        const assignedRole: UserRole = isSuperAdminEmail(cleanEmail) ? 'SUPER_ADMIN' : 'ORGANIZER';
 
         // Register profile in Supabase & local store
         const generatedId = `usr-${Date.now()}`;
@@ -288,21 +324,11 @@ export default function LoginPage() {
                 <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute right-4 top-1/2 -translate-y-1/2" />
               </div>
 
-              {/* Role / Account Type Selector (In Register mode) */}
+              {/* Info message in Register mode: role is assigned by admin */}
               {mode === 'register' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Type de compte souhaité :
-                  </label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#F0F4F9] dark:bg-slate-800/80 border-none text-slate-800 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#5B8DEF] cursor-pointer"
-                  >
-                    <option value="ORGANIZER">🎪 Organisateur d'Événements</option>
-                    <option value="SELLER">🎟️ Vendeur Guichet (Caisse POS)</option>
-                    <option value="CONTROLLER">📱 Contrôleur de Porte (Scanner)</option>
-                  </select>
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-[11px] font-medium">
+                  🎪 Votre compte sera créé en tant qu'<strong>Organisateur</strong>.
+                  Les rôles Vendeur (Caisse) et Contrôleur (Scanner) sont créés par l'Organisateur depuis son tableau de bord.
                 </div>
               )}
 

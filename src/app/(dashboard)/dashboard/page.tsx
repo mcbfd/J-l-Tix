@@ -1,48 +1,103 @@
 'use client';
 
+import { useEffect, useState, useCallback } from 'react';
 import { useJeltixStore } from '@/lib/store/jeltix-store';
 import { formatFCFA } from '@/lib/utils/format';
 import { StatCard } from '@/components/ui/StatCard';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { LiveScansFeed } from '@/components/dashboard/LiveScansFeed';
 import Link from 'next/link';
-import { Plus, Users, ArrowRight, ShieldCheck, Calendar } from 'lucide-react';
+import { Plus, Users, ArrowRight, Calendar, RefreshCw, Loader2 } from 'lucide-react';
+import {
+  fetchPlatformKPIs,
+  fetchOrganizerKPIs,
+  type PlatformKPIs,
+  type OrganizerKPIs,
+} from '@/lib/services/analytics.service';
 
 export default function DashboardPage() {
-  const { getDashboardKPIs, currentUser } = useJeltixStore();
-  const kpis = getDashboardKPIs();
+  const { currentUser } = useJeltixStore();
+  const role = currentUser?.role;
+  const isAdmin = role === 'SUPER_ADMIN';
+  const isOrganizer = role === 'ORGANIZER';
+
+  const [kpis, setKpis] = useState<PlatformKPIs | OrganizerKPIs | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadKPIs = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (isAdmin) {
+        setKpis(await fetchPlatformKPIs());
+      } else if (isOrganizer && currentUser?.id) {
+        setKpis(await fetchOrganizerKPIs(currentUser.id));
+      }
+    } catch (err) {
+      console.warn('Dashboard KPI load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin, isOrganizer, currentUser?.id]);
+
+  useEffect(() => {
+    loadKPIs();
+  }, [loadKPIs]);
+
+  const pKpis = kpis as PlatformKPIs | null;
+  const oKpis = kpis as OrganizerKPIs | null;
+
+  const totalRevenue = kpis?.totalRevenue ?? 0;
+  const totalTicketsSold = kpis?.totalTicketsSold ?? 0;
+  const activeEventsCount = kpis?.activeEventsCount ?? 0;
+  const successfulScansToday = kpis?.successfulScansToday ?? 0;
 
   return (
     <div className="flex flex-col w-full gap-8">
+      {/* Refresh button */}
+      <div className="flex justify-end">
+        <button
+          onClick={loadKPIs}
+          disabled={loading}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-outline-variant text-xs font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition cursor-pointer disabled:opacity-40"
+        >
+          {loading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
+          Actualiser les données
+        </button>
+      </div>
+
       {/* 4 Stat Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Revenu Total"
-          value={formatFCFA(kpis.totalRevenue)}
+          value={loading ? '—' : formatFCFA(totalRevenue)}
           unit="FCFA"
-          growth={kpis.revenueGrowth}
+          growth={0}
           iconName="payments"
           variant="primary"
         />
 
         <StatCard
           title="Billets Vendus"
-          value={kpis.totalTicketsSold.toLocaleString('fr-FR')}
-          growth={kpis.ticketsGrowth}
+          value={loading ? '—' : totalTicketsSold.toLocaleString('fr-FR')}
+          growth={0}
           iconName="confirmation_number"
           variant="tertiary"
         />
 
         <StatCard
           title="Événements Actifs"
-          value={kpis.activeEventsCount}
+          value={loading ? '—' : activeEventsCount}
           iconName="event"
           variant="primary"
         />
 
         <StatCard
-          title="Scans Réussis"
-          value={kpis.successfulScansCount.toLocaleString('fr-FR')}
+          title="Scans Validés Aujourd'hui"
+          value={loading ? '—' : successfulScansToday.toLocaleString('fr-FR')}
           tag="Aujourd'hui"
           iconName="qr_code_scanner"
           variant="tertiary"
@@ -69,7 +124,9 @@ export default function DashboardPage() {
               <Plus className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">Créer un Nouvel Événement</h3>
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                Créer un Nouvel Événement
+              </h3>
               <p className="text-xs text-slate-500 dark:text-white/70 mt-1 leading-relaxed">
                 Configurez un match, un festival ou combat de lutte avec la tarification et les quotas de billets.
               </p>
@@ -96,7 +153,7 @@ export default function DashboardPage() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-on-surface">Gestion Opérateurs & Rôles</h3>
+                <h3 className="text-lg font-black text-on-surface">Gestion Opérateurs &amp; Rôles</h3>
                 <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
                   Supervisez les organisateurs, contrôleurs et vendeurs de guichet de la plateforme.
                 </p>
@@ -121,7 +178,7 @@ export default function DashboardPage() {
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-on-surface">Mes Événements & Billetterie</h3>
+                <h3 className="text-lg font-black text-on-surface">Mes Événements &amp; Billetterie</h3>
                 <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
                   Consultez vos événements actifs, ajustez les quotas et suivez les ventes en direct.
                 </p>

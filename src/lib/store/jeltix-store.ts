@@ -448,9 +448,9 @@ class JeltixStore {
 
     return {
       totalRevenue,
-      revenueGrowth: 14.8,
+      revenueGrowth: 0,
       totalTicketsSold,
-      ticketsGrowth: 22.4,
+      ticketsGrowth: 0,
       activeEventsCount,
       successfulScansCount,
       globalFillRate,

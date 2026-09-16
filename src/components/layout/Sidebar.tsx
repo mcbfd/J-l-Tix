@@ -50,9 +50,9 @@ const NAV_ITEMS = [
   },
   {
     href: '/users',
-    label: 'Utilisateurs & Rôles',
+    label: 'Équipe & Rôles',
     materialIcon: 'group',
-    roles: ['SUPER_ADMIN'],
+    roles: ['SUPER_ADMIN', 'ORGANIZER'],
   },
 ];
 

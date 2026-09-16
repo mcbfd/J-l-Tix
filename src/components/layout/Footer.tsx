@@ -33,12 +33,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/events/match-pilote-finale-coupe" className="hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors">
-                  Finale Coupe du Sénégal
+                <Link href="/events" className="hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors">
+                  Voir tous les événements
                 </Link>
               </li>
               <li>
-                <Link href="/tickets/JT-7777-DEMO" className="hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors">
+                <Link href="/tickets" className="hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors">
                   Vérifier / Télécharger mon billet
                 </Link>
               </li>

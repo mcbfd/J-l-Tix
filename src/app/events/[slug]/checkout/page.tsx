@@ -34,7 +34,7 @@ export default function CheckoutPage({
   const resolvedParams = use(params);
   const router = useRouter();
   const { getEventBySlug, purchaseTickets } = useJeltixStore();
-  const event = getEventBySlug(resolvedParams.slug) || getEventBySlug('match-pilote-finale-coupe');
+  const event = getEventBySlug(resolvedParams.slug);
 
   const [checkoutData, setCheckoutData] = useState<{
     eventId: string;
@@ -42,9 +42,9 @@ export default function CheckoutPage({
     totalPrice: number;
   } | null>(null);
 
-  const [customerName, setCustomerName] = useState('Mamadou Ndiaye');
-  const [customerPhone, setCustomerPhone] = useState('+221 77 456 78 90');
-  const [customerEmail, setCustomerEmail] = useState('m.ndiaye@gmail.com');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('WAVE');
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);

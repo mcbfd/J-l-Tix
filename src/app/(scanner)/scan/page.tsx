@@ -362,37 +362,6 @@ export default function PwaScannerPage() {
   const gateValidCount = gateScans.filter((s) => s.result === 'VALID').length;
   const gateFraudCount = gateScans.filter((s) => s.result !== 'VALID').length;
 
-  // Sample testing tickets for immediate field simulation
-  const sampleTickets = [
-    {
-      id: 'sim-1',
-      ticketCode: 'JT-7777-DEMO',
-      customerName: 'Ibrahima Diallo',
-      ticketTypeName: 'Tribune Couverte',
-      label: 'Billet Valide (Demo)',
-    },
-    {
-      id: 'sim-2',
-      ticketCode: 'JT-2026-VIP',
-      customerName: 'Aïssatou Ndiaye',
-      ticketTypeName: 'Loge VIP Prestige',
-      label: 'Billet VIP Valide',
-    },
-    {
-      id: 'sim-3',
-      ticketCode: 'JT-8921-X',
-      customerName: 'Moussa Diop',
-      ticketTypeName: 'Gradins Virage',
-      label: 'Billet Déjà Utilisé',
-    },
-    {
-      id: 'sim-4',
-      ticketCode: 'JT-0000-FAUX',
-      customerName: 'Inconnu',
-      ticketTypeName: 'Faux Code',
-      label: 'Code Invalide / Faux',
-    },
-  ];
 
   const isDark = theme === 'dark';
 
@@ -711,7 +680,7 @@ export default function PwaScannerPage() {
                 setManualCode(e.target.value.toUpperCase());
                 if (manualError) setManualError(null);
               }}
-              placeholder="Saisir code billet (ex: JT-7777-DEMO)"
+              placeholder="Saisir le code du billet (ex: JT-XXXX-XXXX)"
               className="flex-1 px-3 py-2.5 text-xs font-mono font-bold rounded-xl bg-surface-container border border-outline-variant/30 outline-none focus:ring-2 focus:ring-primary"
             />
             <button
@@ -726,26 +695,10 @@ export default function PwaScannerPage() {
           )}
         </form>
 
-        {/* Quick Simulation Buttons Grid (2x2) */}
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant mb-1.5 text-center">
-            Simulateur Rapide de Billets (Tests Terrain)
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {sampleTickets.map((st) => (
-              <button
-                key={st.id}
-                onClick={() => handleProcessCode(st.ticketCode)}
-                className="p-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-left transition-transform active:scale-95 cursor-pointer shadow-2xs"
-              >
-                <p className="text-[11px] font-extrabold text-primary truncate font-mono">
-                  {st.ticketCode}
-                </p>
-                <p className="text-[10px] text-on-surface-variant truncate">{st.label}</p>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Manual Code Input Help */}
+        <p className="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant text-center">
+          Saisir le code manuellement ou scanner le QR code
+        </p>
       </footer>
 
       {/* Slide-over Scan History Modal */}

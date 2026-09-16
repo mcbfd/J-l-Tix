@@ -2,22 +2,21 @@ import { createClient } from '@/lib/supabase/client';
 import { UserProfile, UserRole } from '@/types';
 
 /**
- * Designated Super Administrator emails
- * Only these accounts receive the SUPER_ADMIN role on the platform.
+ * Designated Super Administrator emails — Mamadou Cheikh Ba only.
+ * ONLY these two Google accounts will ever receive the SUPER_ADMIN role.
+ * No other email can self-assign or be assigned SUPER_ADMIN.
  */
 export const SUPER_ADMIN_EMAILS = [
-  'admin@foutaticket.sn',
-  'admin@jeltix.sn',
-  'beyes@gmail.com',
-  'contact@jeltix.sn',
+  'mamadoucheikhba9@gmail.com',
+  'mcbfd9@gmail.com',
 ];
 
 /**
- * Check if an email belongs to a designated Super Admin
+ * Strict Super Admin check — exact match only, no wildcard patterns.
  */
 export function isSuperAdminEmail(email: string): boolean {
   const clean = email.trim().toLowerCase();
-  return SUPER_ADMIN_EMAILS.some((adm) => adm.toLowerCase() === clean) || clean.startsWith('admin@');
+  return SUPER_ADMIN_EMAILS.some((adm) => adm.toLowerCase() === clean);
 }
 
 /**

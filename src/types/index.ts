@@ -20,6 +20,8 @@ export interface UserProfile {
   role: UserRole;
   avatarUrl?: string;
   organization?: string;
+  /** UUID of the Organizer who created this team member (for SELLER / CONTROLLER) */
+  organizationId?: string | null;
   isActive: boolean;
   createdAt: string;
 }

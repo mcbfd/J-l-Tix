@@ -79,37 +79,16 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
             aria-haspopup="true"
           >
             <span className="material-symbols-outlined text-[24px]">notifications</span>
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#DC2626] border-2 border-white dark:border-[#071229] animate-pulse" />
           </button>
 
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-[#0B1936] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200 text-slate-900 dark:text-white">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
                 <p className="text-xs font-extrabold uppercase">Notifications Jël Tix</p>
-                <span className="text-[10px] text-[#0038A8] dark:text-[#4EED15] font-bold bg-[#0038A8]/10 dark:bg-[#4EED15]/20 px-2 py-0.5 rounded-full">3 récentes</span>
               </div>
-              <div className="space-y-2 mt-3 max-h-64 overflow-y-auto text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 flex items-start gap-2.5 border border-slate-200 dark:border-white/10">
-                  <span className="material-symbols-outlined text-[#2CA808] text-[20px]">check_circle</span>
-                  <div>
-                    <p className="font-bold">Billet #JT-8921-X scanné</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Porte A • Il y a 12 sec</p>
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-start gap-2.5 border border-red-200 dark:border-red-800">
-                  <span className="material-symbols-outlined text-[#DC2626] text-[20px]">warning</span>
-                  <div>
-                    <p className="font-bold text-[#DC2626]">Alerte double scan déjouée</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Porte C (VIP) • Il y a 45 sec</p>
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 flex items-start gap-2.5 border border-slate-200 dark:border-white/10">
-                  <span className="material-symbols-outlined text-[#0038A8] text-[20px]">payments</span>
-                  <div>
-                    <p className="font-bold">Paiement Wave reçu (500 FCFA)</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Fatou Bintou Sow</p>
-                  </div>
-                </div>
+              <div className="py-8 flex flex-col items-center justify-center text-center gap-2">
+                <span className="material-symbols-outlined text-[32px] text-slate-300 dark:text-white/20">notifications_off</span>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Aucune notification pour le moment</p>
               </div>
             </div>
           )}

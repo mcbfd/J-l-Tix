@@ -38,7 +38,7 @@ export default function TicketViewPage({
 }) {
   const resolvedParams = use(params);
   const { getTicketByCode, getEventBySlug } = useJeltixStore();
-  const ticket = getTicketByCode(resolvedParams.code) || getTicketByCode('JT-7777-DEMO');
+  const ticket = getTicketByCode(resolvedParams.code);
   const event = ticket ? getEventBySlug(ticket.eventId) : null;
   const [copied, setCopied] = useState(false);
   const [liveSeconds, setLiveSeconds] = useState(0);

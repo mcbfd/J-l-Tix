@@ -18,13 +18,13 @@ export function MobileBottomNav() {
       isActive: pathname === '/' || pathname === '/events',
     },
     {
-      href: '/events/match-pilote-finale-coupe',
-      label: 'Match',
+      href: '/events',
+      label: 'Événements',
       icon: Calendar,
       isActive: pathname.startsWith('/events/'),
     },
     {
-      href: '/tickets/JT-7777-DEMO',
+      href: '/tickets',
       label: 'Mon Billet',
       icon: Ticket,
       isActive: pathname.startsWith('/tickets/'),
