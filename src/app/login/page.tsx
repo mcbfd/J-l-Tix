@@ -78,12 +78,26 @@ export default function LoginPage() {
 
         const cleanEmail = user.email.trim().toLowerCase();
         const { isSuperAdminEmail: isAdmin, syncUserProfile } = await import('@/lib/services/profiles.service');
-        const role = isAdmin(cleanEmail) ? 'SUPER_ADMIN' : 'ORGANIZER';
+
+        // Vérifier d'abord si un profil existe déjà avec un rôle défini en DB
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, role, avatar_url, is_active, created_at')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        let role: import('@/types').UserRole;
+        if (existingProfile?.role && existingProfile.role !== 'ORGANIZER') {
+          // Conserver le rôle existant (SELLER, CONTROLLER, FINANCE, etc.)
+          role = existingProfile.role as import('@/types').UserRole;
+        } else {
+          role = isAdmin(cleanEmail) ? 'SUPER_ADMIN' : 'ORGANIZER';
+        }
 
         const profile = await syncUserProfile(
           user.id,
           cleanEmail,
-          user.user_metadata?.full_name || user.user_metadata?.name || cleanEmail.split('@')[0],
+          existingProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || cleanEmail.split('@')[0],
           role
         );
 

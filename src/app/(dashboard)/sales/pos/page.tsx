@@ -161,7 +161,7 @@ export default function POSPage() {
       items,
       paymentMethod: selectedPayment,
       channel: 'POS_GUICHET',
-      sellerId: 'usr-3',
+      sellerId: currentUser?.id,
     });
 
     playCashRegisterSound();
@@ -174,7 +174,7 @@ export default function POSPage() {
     <div className="flex flex-col w-full gap-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-24 right-8 z-50 bg-[#0038A8] text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-white/20 animate-in fade-in slide-in-from-top-3">
+        <div className="fixed top-20 left-4 right-4 sm:left-auto sm:top-24 sm:right-8 z-50 bg-[#0038A8] text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-white/20 animate-in fade-in slide-in-from-top-3">
           <Sparkles className="w-4 h-4 text-[#4EED15]" />
           <span className="text-xs font-bold">{toastMessage}</span>
         </div>
@@ -190,7 +190,7 @@ export default function POSPage() {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
-            Opérateur : Vendeur Guichet Stade • Session active • Encaissement instantané
+            Opérateur : {currentUser?.fullName || 'Vendeur Guichet'} • Session active • Encaissement instantané
           </p>
         </div>
 
@@ -544,7 +544,7 @@ export default function POSPage() {
               <div>
                 <p className="text-lg font-black tracking-tight text-[#0038A8]">JËL TIX BILLETTERIE</p>
                 <p className="text-[10px] text-slate-500">Saisissez • Réservez • Profitez</p>
-                <p className="text-[10px] text-slate-500">Guichet Stade • Vendeur #03</p>
+                <p className="text-[10px] text-slate-500">Opérateur : {currentUser?.fullName || 'Vendeur Guichet'}</p>
               </div>
 
               <div className="border-t border-b border-dashed border-slate-300 py-2 text-left text-xs space-y-1">

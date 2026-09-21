@@ -130,9 +130,9 @@ function saveStoredAuditLogs(data: AuditLogEntry[]) {
 export async function fetchWithdrawalRequests(organizerId?: string): Promise<WithdrawalRequest[]> {
   try {
     const supabase = createClient();
-    const query = supabase.from('withdrawal_requests').select('*').order('requested_at', { ascending: false });
+    let query = supabase.from('withdrawal_requests').select('*').order('requested_at', { ascending: false });
     if (organizerId) {
-      query.eq('organizer_id', organizerId);
+      query = query.eq('organizer_id', organizerId) as typeof query;
     }
     const { data, error } = await query;
     if (!error && data && data.length > 0) {

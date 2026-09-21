@@ -118,12 +118,12 @@ export default function SalesPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-on-surface">Gestion des Ventes</h1>
-          <p className="text-sm text-on-surface-variant">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface">Gestion des Ventes</h1>
+          <p className="text-xs sm:text-sm text-on-surface-variant">
             Suivi des encaissements en temps réel depuis Supabase — Mobile Money et guichet.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={loadOrders}
             disabled={loading}
@@ -134,21 +134,21 @@ export default function SalesPage() {
           </button>
           <Link
             href="/sales/pos"
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:scale-[0.98] transition-transform shadow-md"
+            className="bg-primary text-on-primary px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:scale-[0.98] transition-transform shadow-md"
           >
-            <span className="material-symbols-outlined text-[20px] text-[#4EED15]">point_of_sale</span>
-            <span>Ouvrir Guichet Caisse (POS)</span>
+            <span className="material-symbols-outlined text-[18px] text-[#4EED15]">point_of_sale</span>
+            <span>Guichet POS</span>
           </Link>
         </div>
       </div>
 
       {/* 3 Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-surface-container rounded-2xl p-5 border border-outline-variant/30 flex flex-col gap-1">
           <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider font-bold flex items-center gap-1.5">
             <CreditCard className="w-3.5 h-3.5" /> Chiffre d'Affaires Total
           </p>
-          <p className="text-3xl font-black text-primary font-mono">
+          <p className="text-2xl sm:text-3xl font-black text-primary font-mono">
             {loading ? '—' : `${formatFCFA(totalRevenue)}`}{' '}
             <span className="text-sm font-normal text-on-surface-variant">FCFA</span>
           </p>
@@ -158,7 +158,7 @@ export default function SalesPage() {
           <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider font-bold flex items-center gap-1.5">
             <ShoppingBag className="w-3.5 h-3.5" /> Commandes Complétées
           </p>
-          <p className="text-3xl font-black text-tertiary font-mono">
+          <p className="text-2xl sm:text-3xl font-black text-tertiary font-mono">
             {loading ? '—' : orders.length.toLocaleString('fr-FR')}
           </p>
         </div>
@@ -167,15 +167,58 @@ export default function SalesPage() {
           <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider font-bold flex items-center gap-1.5">
             <Smartphone className="w-3.5 h-3.5" /> Part Mobile Money
           </p>
-          <p className="text-3xl font-black text-on-surface font-mono">
+          <p className="text-2xl sm:text-3xl font-black text-on-surface font-mono">
             {loading ? '—' : `${mobileMoneyPct}%`}
             <span className="text-xs text-tertiary font-bold ml-2">(Wave / OM / Free)</span>
           </p>
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-surface-container rounded-3xl border border-outline-variant/30 overflow-hidden shadow-sm">
+      {/* Orders — Vue Mobile (cards) */}
+      <div className="md:hidden flex flex-col gap-3">
+        <h2 className="text-sm font-bold text-on-surface px-1">Dernières Commandes</h2>
+        {loading ? (
+          <div className="flex items-center justify-center py-12 gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <span className="text-xs text-on-surface-variant font-mono">Chargement…</span>
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-12 text-on-surface-variant text-xs">
+            Aucune commande. Utilisez la billetterie publique ou le guichet POS.
+          </div>
+        ) : (
+          orders.map((ord) => {
+            const methodMeta = METHOD_LABELS[ord.payment_method] ?? { label: ord.payment_method, color: '#888' };
+            return (
+              <div key={ord.id} className="bg-surface-container rounded-2xl p-4 border border-outline-variant/30 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-mono font-black text-xs text-primary truncate">{ord.reference}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold text-[10px] font-mono shrink-0">PAYÉ</span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-on-surface">{ord.customer_name}</p>
+                  <p className="text-[11px] text-on-surface-variant font-mono">{ord.customer_phone}</p>
+                </div>
+                <p className="text-[11px] text-on-surface truncate">
+                  {(Array.isArray(ord.events) ? ord.events[0]?.title : ord.events?.title) ?? '—'}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface-container-high">
+                      {ord.channel === 'POS_GUICHET' ? 'GUICHET' : 'EN LIGNE'}
+                    </span>
+                    <span className="text-xs font-bold" style={{ color: methodMeta.color }}>{methodMeta.label}</span>
+                  </div>
+                  <span className="font-black text-xs text-on-surface font-mono">{formatFCFA(ord.total_amount)} F</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Orders — Vue Desktop (table) */}
+      <div className="hidden md:block bg-surface-container rounded-3xl border border-outline-variant/30 overflow-hidden shadow-sm">
         <div className="p-4 bg-surface-container-low border-b border-surface-container-high flex justify-between items-center">
           <h2 className="text-sm font-bold text-on-surface">Dernières Commandes Jël Tix</h2>
           <span className="text-xs text-on-surface-variant font-mono">
@@ -206,7 +249,7 @@ export default function SalesPage() {
                 {orders.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-on-surface-variant text-xs">
-                      Aucune commande complétée dans la base de données. Utilisez la billetterie publique ou le guichet POS pour passer une commande.
+                      Aucune commande complétée dans la base de données.
                     </td>
                   </tr>
                 ) : (
@@ -228,10 +271,7 @@ export default function SalesPage() {
                           </span>
                         </td>
                         <td className="p-4">
-                          <span
-                            className="text-xs font-bold"
-                            style={{ color: methodMeta.color }}
-                          >
+                          <span className="text-xs font-bold" style={{ color: methodMeta.color }}>
                             {methodMeta.label}
                           </span>
                         </td>

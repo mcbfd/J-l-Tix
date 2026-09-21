@@ -346,10 +346,10 @@ export default function ReportsPage() {
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-on-surface">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface">
             Rapports &amp; Audit Financier
           </h1>
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-xs sm:text-sm text-on-surface-variant">
             Données en temps réel depuis Supabase ·{' '}
             <span className="font-mono">
               Actualisé {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -422,8 +422,8 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Scans aujourd'hui (badge) ────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-surface-container rounded-2xl border border-outline-variant/30 w-fit">
-        <ShieldCheck className="w-5 h-5 text-[#4EED15]" />
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-surface-container rounded-2xl border border-outline-variant/30">
+        <ShieldCheck className="w-5 h-5 text-[#4EED15] shrink-0" />
         <span className="text-sm font-bold text-on-surface">
           Scans aujourd'hui :{' '}
           <span className="text-[#4EED15] font-mono">

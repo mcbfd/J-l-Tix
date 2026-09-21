@@ -24,7 +24,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Main Backoffice Area — pas de transition-all pour éviter le reflow */}
       <div className="pl-0 lg:pl-72 flex flex-col flex-1 min-h-screen">
         <Header onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
-        <main className="pt-32 lg:pt-36 flex-1 w-full max-w-[1440px] mx-auto p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        <main className="pt-32 lg:pt-36 pb-24 lg:pb-8 flex-1 w-full max-w-[1440px] mx-auto p-4 sm:p-6 lg:p-8 overflow-x-hidden">
           {children}
         </main>
         <Footer />

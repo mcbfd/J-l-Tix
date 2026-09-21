@@ -80,8 +80,45 @@ export default function ScansPage() {
         </div>
       </div>
 
-      {/* Scans Full Table */}
-      <div className="bg-surface-container rounded-3xl border border-outline-variant/30 overflow-hidden shadow-sm">
+      {/* Scans — Vue Mobile (cards) */}
+      <div className="md:hidden flex flex-col gap-3">
+        {scans.length === 0 ? (
+          <div className="text-center py-12 text-on-surface-variant text-xs">
+            Aucun scan enregistré. Utilisez le Scanner Contrôleur pour valider des billets.
+          </div>
+        ) : (
+          scans.map((scan) => {
+            const isValid = scan.result === 'VALID';
+            const isAlreadyScanned = scan.result === 'ALREADY_SCANNED';
+            return (
+              <div key={scan.id} className="bg-surface-container rounded-2xl p-4 border border-outline-variant/30 flex items-start gap-3">
+                <span className={`mt-0.5 w-2.5 h-2.5 rounded-full shrink-0 ${isValid ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-black text-xs text-primary truncate">#{scan.ticketCode}</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-black text-[10px] font-mono shrink-0 ${
+                      isValid ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300'
+                      : isAlreadyScanned ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
+                      : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
+                    }`}>
+                      {isValid ? 'VALIDE' : isAlreadyScanned ? 'DÉJÀ SCANNÉ' : 'INVALIDE'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-on-surface font-semibold mt-0.5">{scan.ticketTypeName}</p>
+                  <p className="text-[11px] text-on-surface-variant mt-0.5">{scan.gate}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-on-surface-variant font-mono truncate">{scan.controllerName}</span>
+                    <span className="text-[10px] text-on-surface-variant font-mono">{formatRelativeTime(scan.scannedAt)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Scans — Vue Desktop (table) */}
+      <div className="hidden md:block bg-surface-container rounded-3xl border border-outline-variant/30 overflow-hidden shadow-sm">
         <div className="p-4 bg-surface-container-low border-b border-surface-container-high flex justify-between items-center">
           <h2 className="text-sm font-bold text-on-surface">Historique d'audit des scans en direct</h2>
           <span className="text-xs font-mono text-tertiary bg-tertiary-container/15 px-3 py-1 rounded-full font-bold">
@@ -102,37 +139,42 @@ export default function ScansPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container-high/60">
-              {scans.map((scan) => {
-                const isValid = scan.result === 'VALID';
-                const isAlreadyScanned = scan.result === 'ALREADY_SCANNED';
-
-                return (
-                  <tr key={scan.id} className="hover:bg-surface-container-highest transition-colors">
-                    <td className="p-4 font-mono font-black text-xs text-primary">
-                      #{scan.ticketCode}
-                    </td>
-                    <td className="p-4 font-bold text-on-surface">{scan.ticketTypeName}</td>
-                    <td className="p-4 text-on-surface">{scan.gate}</td>
-                    <td className="p-4 text-on-surface-variant font-mono">{scan.controllerName}</td>
-                    <td className="p-4 text-on-surface-variant font-mono">
-                      {formatRelativeTime(scan.scannedAt)}
-                    </td>
-                    <td className="p-4 text-center">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full font-black text-[10px] font-mono ${
+              {scans.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-on-surface-variant text-xs">
+                    Aucun scan enregistré. Utilisez le Scanner Contrôleur pour valider des billets.
+                  </td>
+                </tr>
+              ) : (
+                scans.map((scan) => {
+                  const isValid = scan.result === 'VALID';
+                  const isAlreadyScanned = scan.result === 'ALREADY_SCANNED';
+                  return (
+                    <tr key={scan.id} className="hover:bg-surface-container-highest transition-colors">
+                      <td className="p-4 font-mono font-black text-xs text-primary">
+                        #{scan.ticketCode}
+                      </td>
+                      <td className="p-4 font-bold text-on-surface">{scan.ticketTypeName}</td>
+                      <td className="p-4 text-on-surface">{scan.gate}</td>
+                      <td className="p-4 text-on-surface-variant font-mono">{scan.controllerName}</td>
+                      <td className="p-4 text-on-surface-variant font-mono">
+                        {formatRelativeTime(scan.scannedAt)}
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full font-black text-[10px] font-mono ${
                           isValid
                             ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300'
                             : isAlreadyScanned
                             ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
                             : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
-                        }`}
-                      >
-                        {isValid ? 'VALIDE' : isAlreadyScanned ? 'DÉJÀ SCANNÉ' : 'INVALIDE'}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                        }`}>
+                          {isValid ? 'VALIDE' : isAlreadyScanned ? 'DÉJÀ SCANNÉ' : 'INVALIDE'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

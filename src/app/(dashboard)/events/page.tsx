@@ -110,7 +110,7 @@ export default function EventsManagementPage() {
     <div className="flex flex-col w-full relative gap-6">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-24 right-8 z-50 bg-[#1D63ED] text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-white/20 animate-in fade-in">
+        <div className="fixed top-20 left-4 right-4 sm:left-auto sm:top-24 sm:right-8 z-50 bg-[#1D63ED] text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-white/20 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-[#4EED15]" />
           <span className="text-xs font-bold">{toast}</span>
         </div>
@@ -238,129 +238,231 @@ export default function EventsManagementPage() {
         </div>
 
         {/* Data Table */}
-        <div className="overflow-x-auto w-full rounded-2xl border border-slate-200/70 dark:border-white/10">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-100/70 dark:bg-white/5 text-[11px] font-extrabold text-slate-600 dark:text-white/70 border-b border-slate-200 dark:border-white/10 uppercase tracking-wider font-mono">
-                <th className="p-4">Événement</th>
-                <th className="p-4">Lieu</th>
-                <th className="p-4">Date & Heure</th>
-                <th className="p-4">Jauge / Ventes</th>
-                <th className="p-4 text-center">Statut</th>
-                <th className="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-[#0B1936]">
-              {paginatedEvents.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-white/60">
-                    Aucun événement trouvé pour ces critères de recherche.
-                  </td>
-                </tr>
-              ) : (
-                paginatedEvents.map((evt) => {
-                  const fillPercent = Math.round((evt.soldCapacity / evt.totalCapacity) * 100);
-
-                  return (
-                    <tr key={evt.id} className="hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 shadow-xs">
-                            <Image
-                              src={evt.bannerImage}
-                              alt=""
-                              fill
-                              sizes="48px"
-                              className="object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-extrabold text-slate-900 dark:text-white text-sm">{evt.title}</p>
-                            <span className="text-[10px] font-extrabold text-[#1D63ED] dark:text-[#4EED15] font-mono bg-blue-50 dark:bg-white/10 px-2 py-0.5 rounded-md">
-                              {evt.category}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="p-4">
-                        <p className="font-bold text-slate-800 dark:text-white">{evt.venue}</p>
-                        <p className="text-slate-500 dark:text-white/60 text-[11px] font-mono">{evt.locationDetails}</p>
-                      </td>
-
-                      <td className="p-4">
-                        <div className="flex items-center gap-1 text-slate-800 dark:text-white font-bold">
-                          <Calendar className="w-3.5 h-3.5 text-[#1D63ED] dark:text-[#4EED15]" />
-                          <span>{formatDateFrench(evt.startDate)}</span>
-                        </div>
-                        <p className="text-slate-500 dark:text-white/60 font-mono text-[11px] mt-0.5">{evt.timeString}</p>
-                      </td>
-
-                      <td className="p-4">
-                        <div className="w-36 space-y-1">
-                          <div className="flex justify-between font-mono text-[11px]">
-                            <span className="font-extrabold text-slate-900 dark:text-white">{evt.soldCapacity.toLocaleString('fr-FR')}</span>
-                            <span className="text-slate-500 dark:text-white/60">/ {evt.totalCapacity.toLocaleString('fr-FR')}</span>
-                          </div>
-                          <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                fillPercent >= 100
-                                  ? 'bg-slate-400'
-                                  : fillPercent > 0
-                                  ? 'bg-[#059669]'
-                                  : 'bg-slate-200 dark:bg-white/20'
-                              }`}
-                              style={{ width: `${Math.min(100, fillPercent)}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="p-4 text-center">
-                        <select
-                          value={evt.status}
-                          onChange={(e) => handleStatusChange(evt.id, e.target.value as EventStatus)}
-                          className={`px-3 py-1 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer outline-none ${
-                            evt.status === 'PUBLISHED'
-                              ? 'bg-[#DCFCE7] text-[#166534] border-[#86EFAC]'
-                              : evt.status === 'DRAFT'
-                              ? 'bg-[#E2E8F0] text-[#334155] border-[#CBD5E1]'
-                              : 'bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]'
+        {/* Data Table */}
+        <div className="w-full rounded-2xl border border-slate-200/70 dark:border-white/10 overflow-hidden">
+          {/* Vue Mobile (Cartes) */}
+          <div className="md:hidden divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-[#0B1936]">
+            {paginatedEvents.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 dark:text-white/60 text-xs">
+                Aucun événement trouvé pour ces critères de recherche.
+              </div>
+            ) : (
+              paginatedEvents.map((evt) => {
+                const fillPercent = Math.round((evt.soldCapacity / evt.totalCapacity) * 100);
+                return (
+                  <div key={evt.id} className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 shadow-xs">
+                        <Image
+                          src={evt.bannerImage}
+                          alt=""
+                          fill
+                          sizes="48px"
+                          className="object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-extrabold text-slate-900 dark:text-white text-sm truncate">{evt.title}</p>
+                        <span className="text-[10px] font-extrabold text-[#1D63ED] dark:text-[#4EED15] font-mono bg-blue-50 dark:bg-white/10 px-2 py-0.5 rounded-md inline-block mt-1">
+                          {evt.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-1 text-slate-800 dark:text-white font-bold">
+                        <Calendar className="w-3.5 h-3.5 text-[#1D63ED] dark:text-[#4EED15]" />
+                        <span>{formatDateFrench(evt.startDate)}</span>
+                      </div>
+                      <select
+                        value={evt.status}
+                        onChange={(e) => handleStatusChange(evt.id, e.target.value as EventStatus)}
+                        className={`px-2 py-1 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer outline-none ${
+                          evt.status === 'PUBLISHED'
+                            ? 'bg-[#DCFCE7] text-[#166534] border-[#86EFAC]'
+                            : evt.status === 'DRAFT'
+                            ? 'bg-[#E2E8F0] text-[#334155] border-[#CBD5E1]'
+                            : 'bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]'
+                        }`}
+                      >
+                        <option value="PUBLISHED">● PUBLIÉ</option>
+                        <option value="DRAFT">● BROUILLON</option>
+                        <option value="CLOSED">🔒 CLÔTURÉ</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between font-mono text-[11px]">
+                        <span className="font-extrabold text-slate-900 dark:text-white">
+                          {evt.soldCapacity.toLocaleString('fr-FR')} <span className="font-sans font-normal text-[10px] text-slate-500">vendus</span>
+                        </span>
+                        <span className="text-slate-500 dark:text-white/60">/ {evt.totalCapacity.toLocaleString('fr-FR')}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            fillPercent >= 100
+                              ? 'bg-slate-400'
+                              : fillPercent > 0
+                              ? 'bg-[#059669]'
+                              : 'bg-slate-200 dark:bg-white/20'
                           }`}
+                          style={{ width: `${Math.min(100, fillPercent)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="text-[10px] font-mono text-slate-500 truncate pr-2">
+                        {evt.venue}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Link
+                          href={`/events/${evt.slug}`}
+                          target="_blank"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white transition-colors"
+                          title="Voir la page publique"
                         >
-                          <option value="PUBLISHED">● PUBLIÉ</option>
-                          <option value="DRAFT">● BROUILLON</option>
-                          <option value="CLOSED">🔒 CLÔTURÉ</option>
-                        </select>
-                      </td>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(evt.id, evt.title)}
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 transition-colors"
+                          title="Supprimer l'événement"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
 
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            href={`/events/${evt.slug}`}
-                            target="_blank"
-                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white transition-colors"
-                            title="Voir la page publique"
+          {/* Vue Desktop (Table) */}
+          <div className="hidden md:block overflow-x-auto w-full bg-white dark:bg-[#0B1936]">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-100/70 dark:bg-white/5 text-[11px] font-extrabold text-slate-600 dark:text-white/70 border-b border-slate-200 dark:border-white/10 uppercase tracking-wider font-mono">
+                  <th className="p-4">Événement</th>
+                  <th className="p-4">Lieu</th>
+                  <th className="p-4">Date & Heure</th>
+                  <th className="p-4">Jauge / Ventes</th>
+                  <th className="p-4 text-center">Statut</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                {paginatedEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-white/60">
+                      Aucun événement trouvé pour ces critères de recherche.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedEvents.map((evt) => {
+                    const fillPercent = Math.round((evt.soldCapacity / evt.totalCapacity) * 100);
+
+                    return (
+                      <tr key={evt.id} className="hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 shadow-xs">
+                              <Image
+                                src={evt.bannerImage}
+                                alt=""
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                            <div>
+                              <p className="font-extrabold text-slate-900 dark:text-white text-sm">{evt.title}</p>
+                              <span className="text-[10px] font-extrabold text-[#1D63ED] dark:text-[#4EED15] font-mono bg-blue-50 dark:bg-white/10 px-2 py-0.5 rounded-md mt-1 inline-block">
+                                {evt.category}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="p-4">
+                          <p className="font-bold text-slate-800 dark:text-white">{evt.venue}</p>
+                          <p className="text-slate-500 dark:text-white/60 text-[11px] font-mono">{evt.locationDetails}</p>
+                        </td>
+
+                        <td className="p-4">
+                          <div className="flex items-center gap-1 text-slate-800 dark:text-white font-bold">
+                            <Calendar className="w-3.5 h-3.5 text-[#1D63ED] dark:text-[#4EED15]" />
+                            <span>{formatDateFrench(evt.startDate)}</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-white/60 font-mono text-[11px] mt-0.5">{evt.timeString}</p>
+                        </td>
+
+                        <td className="p-4">
+                          <div className="w-36 space-y-1">
+                            <div className="flex justify-between font-mono text-[11px]">
+                              <span className="font-extrabold text-slate-900 dark:text-white">{evt.soldCapacity.toLocaleString('fr-FR')}</span>
+                              <span className="text-slate-500 dark:text-white/60">/ {evt.totalCapacity.toLocaleString('fr-FR')}</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  fillPercent >= 100
+                                    ? 'bg-slate-400'
+                                    : fillPercent > 0
+                                    ? 'bg-[#059669]'
+                                    : 'bg-slate-200 dark:bg-white/20'
+                                }`}
+                                style={{ width: `${Math.min(100, fillPercent)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="p-4 text-center">
+                          <select
+                            value={evt.status}
+                            onChange={(e) => handleStatusChange(evt.id, e.target.value as EventStatus)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer outline-none ${
+                              evt.status === 'PUBLISHED'
+                                ? 'bg-[#DCFCE7] text-[#166534] border-[#86EFAC]'
+                                : evt.status === 'DRAFT'
+                                ? 'bg-[#E2E8F0] text-[#334155] border-[#CBD5E1]'
+                                : 'bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]'
+                            }`}
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(evt.id, evt.title)}
-                            className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 transition-colors cursor-pointer"
-                            title="Supprimer l'événement"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                            <option value="PUBLISHED">● PUBLIÉ</option>
+                            <option value="DRAFT">● BROUILLON</option>
+                            <option value="CLOSED">🔒 CLÔTURÉ</option>
+                          </select>
+                        </td>
+
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link
+                              href={`/events/${evt.slug}`}
+                              target="_blank"
+                              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white transition-colors"
+                              title="Voir la page publique"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(evt.id, evt.title)}
+                              className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 transition-colors cursor-pointer"
+                              title="Supprimer l'événement"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Barre de pagination réelle */}
