@@ -28,7 +28,7 @@
   --color-on-secondary: #ffffff;
   --color-on-secondary-container: #1E293B;
 
-  /* Default Light Canvas & Surface Tones (Pure Minimalist White) */
+  /* Default Light Canvas & Surface Tones */
   --color-background: #FFFFFF;
   --color-surface: #FFFFFF;
   --color-surface-bright: #FFFFFF;
@@ -118,26 +118,23 @@
   }
 }
 
-/* Custom Scrollbar for Sleek backoffice look */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ──────────────────────────────────────────────────────── */
+/* Custom Scrollbar — Sleek backoffice look                */
+/* ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
   border-radius: 9999px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
+.dark ::-webkit-scrollbar-thumb { background: #1E3A6E; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-/* Micro Animations & Glow Effects */
+/* ──────────────────────────────────────────────────────── */
+/* Animations & Keyframes                                 */
+/* ──────────────────────────────────────────────────────── */
+
 @keyframes pulse-subtle {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.88; transform: scale(1.02); }
@@ -154,14 +151,155 @@
   50% { transform: translateY(-8px); }
 }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s ease-in-out infinite;
+@keyframes slide-in-right {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 
-.animate-scan-laser {
-  animation: scan-laser 2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+@keyframes slide-out-right {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
 }
 
-.animate-float-slow {
-  animation: float-slow 4s ease-in-out infinite;
+@keyframes fade-up {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes halo-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(78, 237, 21, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(78, 237, 21, 0);   }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes expand-width {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* ──────────────────────────────────────────────────────── */
+/* Animation Utility Classes                              */
+/* ──────────────────────────────────────────────────────── */
+
+.animate-pulse-subtle  { animation: pulse-subtle  3s ease-in-out infinite; }
+.animate-scan-laser    { animation: scan-laser     2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate; }
+.animate-float-slow    { animation: float-slow     4s ease-in-out infinite; }
+.animate-slide-in-right{ animation: slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-out-right{ animation: slide-out-right 0.3s cubic-bezier(0.7, 0, 0.84, 0) both; }
+.animate-fade-up       { animation: fade-up        0.4s  cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-fade-in       { animation: fade-in        0.3s  ease both; }
+.animate-halo-pulse    { animation: halo-pulse      2s   ease-in-out infinite; }
+.animate-count-up      { animation: count-up        0.5s ease-out both; }
+
+/* ──────────────────────────────────────────────────────── */
+/* Skeleton Shimmer                                       */
+/* ──────────────────────────────────────────────────────── */
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(203,213,225,0.4) 25%,
+    rgba(203,213,225,0.9) 50%,
+    rgba(203,213,225,0.4) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(30,58,110,0.35) 25%,
+    rgba(30,58,110,0.75) 50%,
+    rgba(30,58,110,0.35) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ──────────────────────────────────────────────────────── */
+/* Premium Button Gradient                                */
+/* ──────────────────────────────────────────────────────── */
+
+.btn-gradient-primary {
+  background: linear-gradient(135deg, #0038A8 0%, #0D52D6 50%, #0038A8 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 5s ease infinite;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.btn-gradient-primary:hover {
+  box-shadow: 0 4px 20px rgba(0, 56, 168, 0.45);
+  transform: translateY(-1px);
+}
+.btn-gradient-primary:active { transform: scale(0.97); }
+
+/* ──────────────────────────────────────────────────────── */
+/* Card Hover Glow Effect                                 */
+/* ──────────────────────────────────────────────────────── */
+
+.card-hover-glow {
+  transition: box-shadow 0.25s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.card-hover-glow:hover {
+  box-shadow: 0 8px 32px rgba(0, 56, 168, 0.10);
+  transform: translateY(-2px);
+  border-color: rgba(0, 56, 168, 0.20);
+}
+.dark .card-hover-glow:hover {
+  box-shadow: 0 8px 32px rgba(78, 237, 21, 0.07);
+  border-color: rgba(78, 237, 21, 0.14);
+}
+
+/* ──────────────────────────────────────────────────────── */
+/* Stagger Animation Delays (use with animate-fade-up)    */
+/* ──────────────────────────────────────────────────────── */
+
+.stagger-1 { animation-delay:   0ms; }
+.stagger-2 { animation-delay:  70ms; }
+.stagger-3 { animation-delay: 140ms; }
+.stagger-4 { animation-delay: 210ms; }
+.stagger-5 { animation-delay: 280ms; }
+.stagger-6 { animation-delay: 350ms; }
+
+/* ──────────────────────────────────────────────────────── */
+/* Glass Morphism                                         */
+/* ──────────────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.dark .glass {
+  background: rgba(7, 18, 41, 0.72);
+}
+
+/* ──────────────────────────────────────────────────────── */
+/* Focus Ring                                             */
+/* ──────────────────────────────────────────────────────── */
+
+.focus-ring:focus-visible {
+  outline: 2px solid #0038A8;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.dark .focus-ring:focus-visible { outline-color: #4EED15; }

@@ -29,6 +29,7 @@ import {
   updateWithdrawalRequestStatus,
   fetchAuditLogs,
 } from '@/lib/services/payouts-audit.service';
+import { useToast } from '@/components/ui/Toast';
 import {
   Download,
   RefreshCw,
@@ -124,6 +125,7 @@ export default function ReportsPage() {
 
   const isAdmin = effectiveRole === 'SUPER_ADMIN';
   const isOrganizer = effectiveRole === 'ORGANIZER';
+  const { addToast } = useToast();
 
   const [kpis, setKpis] = useState<PlatformKPIs | OrganizerKPIs | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,7 +207,11 @@ export default function ReportsPage() {
     try {
       const csvData = await fetchOrdersForCSV(isOrganizer ? currentUser?.id : undefined);
       if (!csvData) {
-        alert('Aucune commande à exporter pour le moment.');
+        addToast({
+          type: 'warning',
+          title: 'Aucune commande',
+          message: 'Aucune commande à exporter pour le moment.',
+        });
         return;
       }
       const bom = '\uFEFF'; // UTF-8 BOM for Excel compatibility
@@ -216,8 +222,17 @@ export default function ReportsPage() {
       a.download = `jeltix_rapport_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      addToast({
+        type: 'success',
+        title: 'Export Réussi',
+        message: 'Le fichier CSV comptable a été téléchargé.',
+      });
     } catch {
-      alert("Erreur lors de l'export. Réessayez.");
+      addToast({
+        type: 'error',
+        title: 'Erreur',
+        message: "Erreur lors de l'exportation du fichier CSV.",
+      });
     } finally {
       setExportLoading(false);
     }
@@ -227,8 +242,17 @@ export default function ReportsPage() {
     try {
       await updateWithdrawalRequestStatus(id, status, currentUser?.email || 'admin@jeltix.sn');
       await loadWithdrawalsAndAudit();
+      addToast({
+        type: 'success',
+        title: 'Statut mis à jour',
+        message: `La demande de retrait est désormais : ${status}.`,
+      });
     } catch (e) {
-      alert('Erreur lors de la mise à jour du statut.');
+      addToast({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour du statut.',
+      });
     }
   };
 
@@ -236,23 +260,39 @@ export default function ReportsPage() {
     e.preventDefault();
     const amt = parseInt(withdrawalForm.amount, 10);
     if (!amt || isNaN(amt) || amt <= 0) {
-      alert('Veuillez renseigner un montant valide supérieur à 0.');
+      addToast({
+        type: 'warning',
+        title: 'Montant invalide',
+        message: 'Veuillez renseigner un montant valide supérieur à 0.',
+      });
       return;
     }
 
     const availableNet = (kpis as OrganizerKPIs)?.netToMe || 0;
     if (amt > availableNet) {
-      alert(`Le montant demandé (${formatFCFA(amt)} FCFA) dépasse votre solde disponible net (${formatFCFA(availableNet)} FCFA).`);
+      addToast({
+        type: 'error',
+        title: 'Solde insuffisant',
+        message: `Le montant demandé (${formatFCFA(amt)} FCFA) dépasse votre solde disponible net (${formatFCFA(availableNet)} FCFA).`,
+      });
       return;
     }
 
     if ((withdrawalForm.method === 'WAVE' || withdrawalForm.method === 'ORANGE_MONEY') && !withdrawalForm.phoneNumber.trim()) {
-      alert('Veuillez renseigner le numéro de téléphone pour le transfert Mobile Money.');
+      addToast({
+        type: 'warning',
+        title: 'Numéro requis',
+        message: 'Veuillez renseigner le numéro de téléphone pour le transfert Mobile Money.',
+      });
       return;
     }
 
     if (withdrawalForm.method === 'BANK_TRANSFER' && !withdrawalForm.bankDetails.trim()) {
-      alert('Veuillez renseigner les coordonnées bancaires (IBAN / RIB).');
+      addToast({
+        type: 'warning',
+        title: 'Coordonnées requises',
+        message: 'Veuillez renseigner les coordonnées bancaires (IBAN / RIB).',
+      });
       return;
     }
 
@@ -277,9 +317,17 @@ export default function ReportsPage() {
         note: '',
       });
       await loadWithdrawalsAndAudit();
-      alert('Votre demande de retrait a été soumise avec succès.');
+      addToast({
+        type: 'success',
+        title: 'Demande soumise',
+        message: 'Votre demande de virement a été transmise aux administrateurs.',
+      });
     } catch (err) {
-      alert('Erreur lors de la soumission de la demande.');
+      addToast({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Erreur lors de la soumission de la demande de retrait.',
+      });
     } finally {
       setSubmittingWithdrawal(false);
     }

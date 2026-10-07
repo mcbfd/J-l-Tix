@@ -38,10 +38,13 @@ interface CartItem {
   qty: number;
 }
 
+import { useToast } from '@/components/ui/Toast';
+
 const CASH_DENOMINATIONS = [500, 1000, 2000, 5000, 10000, 20000];
 
 export default function POSPage() {
   const { events, purchaseTickets, currentUser } = useJeltixStore();
+  const { addToast } = useToast();
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isSeller = currentUser?.role === 'SELLER';
   const isAuthorized = isSuperAdmin || isSeller;
@@ -58,7 +61,6 @@ export default function POSPage() {
 
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('CASH');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [lastIssuedTickets, setLastIssuedTickets] = useState<Ticket[] | null>(null);
   const [showThermalReceipt, setShowThermalReceipt] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
@@ -101,7 +103,12 @@ export default function POSPage() {
     });
 
     playSuccessBeep();
-    showToast(`+1 ${name} (${price} FCFA)`);
+    addToast({
+      type: 'success',
+      title: 'Ajouté au panier',
+      message: `+1 ${name} (${formatFCFA(price)} FCFA)`,
+      duration: 2000,
+    });
   };
 
   const updateQuantity = (ticketTypeId: string, delta: number) => {
@@ -119,13 +126,6 @@ export default function POSPage() {
         [ticketTypeId]: { ...item, qty: nextQty },
       };
     });
-  };
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 2200);
   };
 
   const clearCart = () => {
@@ -167,18 +167,16 @@ export default function POSPage() {
     playCashRegisterSound();
     setLastIssuedTickets(result.generatedTickets);
     setShowThermalReceipt(true);
+    addToast({
+      type: 'success',
+      title: 'Vente Encaissée !',
+      message: `${result.generatedTickets.length} billet(s) émis • ${formatFCFA(totalAmount)} FCFA`,
+    });
     clearCart();
   };
 
   return (
-    <div className="flex flex-col w-full gap-6">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 left-4 right-4 sm:left-auto sm:top-24 sm:right-8 z-50 bg-[#0038A8] text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-white/20 animate-in fade-in slide-in-from-top-3">
-          <Sparkles className="w-4 h-4 text-[#4EED15]" />
-          <span className="text-xs font-bold">{toastMessage}</span>
-        </div>
-      )}
+    <div className="flex flex-col w-full gap-6 pb-12">
 
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

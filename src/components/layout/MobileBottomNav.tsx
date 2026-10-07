@@ -15,19 +15,19 @@ export function MobileBottomNav() {
       href: '/',
       label: 'Accueil',
       icon: Home,
-      isActive: pathname === '/' || pathname === '/events',
+      isActive: pathname === '/',
     },
     {
       href: '/events',
       label: 'Événements',
       icon: Calendar,
-      isActive: pathname.startsWith('/events/'),
+      isActive: pathname === '/events' || pathname.startsWith('/events/'),
     },
     {
       href: '/tickets',
-      label: 'Mon Billet',
+      label: 'Mes Billets',
       icon: Ticket,
-      isActive: pathname.startsWith('/tickets/'),
+      isActive: pathname === '/tickets' || pathname.startsWith('/tickets/'),
     },
     {
       href: '/scan',
@@ -40,7 +40,12 @@ export function MobileBottomNav() {
       href: '/dashboard',
       label: 'Espace Pro',
       icon: LayoutDashboard,
-      isActive: pathname.startsWith('/dashboard') || pathname.startsWith('/sales') || pathname.startsWith('/scans') || pathname.startsWith('/reports') || pathname.startsWith('/users'),
+      isActive:
+        pathname.startsWith('/dashboard') ||
+        pathname.startsWith('/sales') ||
+        pathname.startsWith('/scans') ||
+        pathname.startsWith('/reports') ||
+        pathname.startsWith('/users'),
     },
   ];
 

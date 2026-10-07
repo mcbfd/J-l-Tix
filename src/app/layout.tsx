@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/lib/theme/ThemeContext";
 import { NavigationProgress } from "@/components/ui/NavigationProgress";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 // ─── Self-hosted fonts via next/font ─────────────────────────────────────────
@@ -82,7 +83,9 @@ export default function RootLayout({
         />
         <NavigationProgress />
         <ThemeProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

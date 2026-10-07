@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useStore } from '@/lib/store/jeltix-store';
 import { createClient } from '@/lib/supabase/client';
@@ -57,8 +57,82 @@ export function getInitials(name?: string): string {
   return parts[0].substring(0, 2).toUpperCase();
 }
 
+// ── Breadcrumb Component ──────────────────────────────────────────────────────
+
+const ROUTE_META: Record<string, { label: string; icon: string; parent?: string }> = {
+  '/dashboard':  { label: 'Tableau de bord', icon: 'dashboard' },
+  '/events':     { label: 'Événements',        icon: 'event',      parent: '/dashboard' },
+  '/events/new': { label: 'Nouvel événement',  icon: 'add_circle', parent: '/events' },
+  '/sales':      { label: 'Ventes & Recettes', icon: 'payments',   parent: '/dashboard' },
+  '/sales/pos':  { label: 'Guichet POS',       icon: 'point_of_sale', parent: '/sales' },
+  '/scans':      { label: 'Scans & Contrôle',  icon: 'qr_code_scanner', parent: '/dashboard' },
+  '/reports':    { label: 'Rapports & Audit',  icon: 'bar_chart',  parent: '/dashboard' },
+  '/users':      { label: 'Gestion Utilisateurs', icon: 'group',   parent: '/dashboard' },
+};
+
+function HeaderBreadcrumb() {
+  const pathname = usePathname();
+
+  // Chercher la route exacte ou la plus proche par préfixe
+  const matchedKey = Object.keys(ROUTE_META)
+    .filter((k) => pathname === k || pathname.startsWith(k + '/'))
+    .sort((a, b) => b.length - a.length)[0];
+
+  const current = matchedKey ? ROUTE_META[matchedKey] : null;
+  const parent  = current?.parent ? ROUTE_META[current.parent] : null;
+
+  if (!current) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-9 h-9 rounded-xl bg-[#0038A8]/10 dark:bg-[#4EED15]/10 text-[#0038A8] dark:text-[#4EED15] hidden sm:flex items-center justify-center shrink-0">
+          <span className="material-symbols-outlined text-[20px]">verified_user</span>
+        </div>
+        <span className="text-xs font-extrabold text-slate-700 dark:text-white/90 tracking-wider uppercase font-mono hidden sm:block">
+          Administration
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <nav aria-label="Fil d'Ariane" className="flex items-center gap-1.5 min-w-0">
+      {/* Icône page courante */}
+      <div className="w-9 h-9 rounded-xl bg-[#0038A8]/10 dark:bg-[#4EED15]/10 text-[#0038A8] dark:text-[#4EED15] hidden sm:flex items-center justify-center shrink-0">
+        <span className="material-symbols-outlined text-[18px]">{current.icon}</span>
+      </div>
+
+      <div className="flex items-center gap-1 min-w-0">
+        {/* Parent (si applicable) */}
+        {parent && current.parent && (
+          <>
+            <Link
+              href={current.parent}
+              prefetch={true}
+              className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors hidden md:block truncate"
+            >
+              {parent.label}
+            </Link>
+            <span className="text-slate-300 dark:text-white/20 hidden md:block text-xs">/</span>
+          </>
+        )}
+
+        {/* Page courante */}
+        <div>
+          <span className="text-sm font-black text-slate-900 dark:text-white truncate block max-w-[180px] sm:max-w-none">
+            {current.label}
+          </span>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 hidden sm:block font-mono">
+            Jël Tix • Serveur Dakar ✓
+          </p>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 export function Header({ onOpenMobileSidebar }: HeaderProps) {
   const router = useRouter();
+
   const { currentUser, setCurrentUser } = useStore();
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -167,27 +241,18 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
   return (
     <>
       <header className="fixed top-0 left-0 lg:left-72 right-0 h-20 bg-white/95 dark:bg-[#071229]/95 backdrop-blur-xl shadow-[0_2px_10px_rgba(0,45,140,0.04)] border-b border-slate-200 dark:border-white/10 z-30 flex items-center justify-between px-4 sm:px-8 transition-colors">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Mobile Sidebar Hamburger Toggle */}
           <button
             onClick={onOpenMobileSidebar}
-            className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white hover:bg-slate-200 transition-colors cursor-pointer"
+            className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white hover:bg-slate-200 dark:hover:bg-white/15 transition-colors cursor-pointer shrink-0"
             aria-label="Ouvrir le menu latéral"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="w-10 h-10 rounded-xl bg-[#1D63ED]/10 dark:bg-[#4EED15]/15 text-[#1D63ED] dark:text-[#4EED15] hidden sm:flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[22px]">
-              verified_user
-            </span>
-          </div>
-          <div>
-            <span className="text-xs font-extrabold text-[#334155] dark:text-white/90 tracking-wider uppercase font-mono">
-              PANNEAU D'ADMINISTRATION
-            </span>
-            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden sm:block">Serveur Régional Dakar • En Ligne</p>
-          </div>
+          {/* Breadcrumb dynamique */}
+          <HeaderBreadcrumb />
         </div>
 
         <div className="flex items-center gap-2.5 sm:gap-4">

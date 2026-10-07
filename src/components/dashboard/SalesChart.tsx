@@ -4,6 +4,7 @@ import { useState, memo, useMemo } from 'react';
 import Link from 'next/link';
 import { useJeltixStore } from '@/lib/store/jeltix-store';
 import type { Order } from '@/types';
+import { formatFCFA } from '@/lib/utils/format';
 
 interface DataPoint {
   day: string;
@@ -18,7 +19,6 @@ function buildChartData(orders: Order[]): DataPoint[] {
   const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
   const today = new Date();
 
-  // Créer un tableau des 7 derniers jours (du plus ancien au plus récent)
   const days: { label: string; date: Date }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
@@ -26,7 +26,6 @@ function buildChartData(orders: Order[]): DataPoint[] {
     days.push({ label: DAY_LABELS[d.getDay()], date: d });
   }
 
-  // Agréger les ventes et revenus par jour
   const buckets = days.map(({ label, date }) => {
     const dayStr = date.toISOString().split('T')[0];
     const dayOrders = orders.filter((o) => o.createdAt.startsWith(dayStr));
@@ -37,24 +36,16 @@ function buildChartData(orders: Order[]): DataPoint[] {
     return { label, sales, revenue };
   });
 
-  // Calculer les positions Y (inversé : plus c'est haut, plus c'est bas dans SVG)
   const maxSales = Math.max(...buckets.map((b) => b.sales), 1);
 
   return buckets.map((b, i) => {
     const cx = Math.round((i / (buckets.length - 1)) * 800);
-    const normalizedY = b.sales / maxSales; // 0..1
-    const cy = Math.round(300 - normalizedY * 250); // SVG Y: 50 (top) … 300 (bottom)
-    return {
-      day: b.label,
-      sales: b.sales,
-      revenue: b.revenue,
-      cx,
-      cy,
-    };
+    const normalizedY = b.sales / maxSales;
+    const cy = Math.round(280 - normalizedY * 240);
+    return { day: b.label, sales: b.sales, revenue: b.revenue, cx, cy };
   });
 }
 
-/** Construit le path SVG d'une courbe lissée via des commandes cubiques */
 function buildSmoothPath(points: { cx: number; cy: number }[]): string {
   if (points.length === 0) return '';
   let d = `M${points[0].cx},${points[0].cy}`;
@@ -67,12 +58,14 @@ function buildSmoothPath(points: { cx: number; cy: number }[]): string {
   return d;
 }
 
+// ID unique par instance pour éviter les conflits de gradient SVG
+const GRADIENT_ID = `chartGrad-${Math.random().toString(36).slice(2, 7)}`;
+
 export const SalesChart = memo(function SalesChart() {
   const { orders } = useJeltixStore();
   const [hoveredPoint, setHoveredPoint] = useState<DataPoint | null>(null);
 
   const dataPoints = useMemo(() => buildChartData(orders), [orders]);
-
   const linePath = useMemo(() => buildSmoothPath(dataPoints), [dataPoints]);
   const areaPath = useMemo(() => {
     if (dataPoints.length === 0) return '';
@@ -83,12 +76,19 @@ export const SalesChart = memo(function SalesChart() {
 
   const hasData = orders.length > 0;
 
+  // Totaux synthétiques
+  const weekTotalSales = dataPoints.reduce((s, d) => s + d.sales, 0);
+  const weekTotalRevenue = dataPoints.reduce((s, d) => s + d.revenue, 0);
+
   return (
-    <div className="bg-white dark:bg-[#0B1936] rounded-2xl p-6 shadow-xs flex flex-col h-full min-h-[420px] border border-slate-200/90 dark:border-white/10">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white dark:bg-[#0B1936] rounded-2xl p-6 shadow-xs flex flex-col h-full min-h-[420px] border border-slate-200/90 dark:border-white/10 card-hover-glow">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">Ventes des 7 derniers jours</h2>
-          <p className="text-xs text-on-surface-variant mt-0.5">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">
+            Ventes — 7 derniers jours
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {hasData
               ? 'Évolution quotidienne des encaissements en ligne et guichet'
               : 'Aucune vente enregistrée — les données apparaîtront au premier achat'}
@@ -97,54 +97,100 @@ export const SalesChart = memo(function SalesChart() {
         <Link
           href="/sales"
           prefetch={true}
-          className="text-primary hover:bg-primary-container/10 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1"
+          className="text-[#0038A8] dark:text-[#4EED15] hover:bg-blue-50 dark:hover:bg-white/5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 shrink-0"
         >
           <span>Voir détail</span>
           <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
         </Link>
       </div>
 
+      {/* KPI mini-row (uniquement si des données existent) */}
+      {hasData && (
+        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-white/5">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono uppercase text-slate-400 dark:text-slate-500 font-bold">Billets vendus</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white">{weekTotalSales.toLocaleString('fr-FR')}</span>
+          </div>
+          <div className="w-px h-8 bg-slate-200 dark:bg-white/10" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono uppercase text-slate-400 dark:text-slate-500 font-bold">Recettes</span>
+            <span className="text-xl font-black text-[#0038A8] dark:text-[#4EED15]">{formatFCFA(weekTotalRevenue)}</span>
+          </div>
+        </div>
+      )}
+
       {/* Hover Info Tooltip */}
       <div className="h-7 mb-2 flex items-center">
         {hoveredPoint ? (
-          <div className="flex items-center gap-3 text-xs bg-surface-container px-3 py-1 rounded-full border border-primary/20 animate-in fade-in duration-150">
-            <span className="font-bold text-primary">{hoveredPoint.day} :</span>
-            <span className="font-medium text-on-surface">{hoveredPoint.sales} billet{hoveredPoint.sales !== 1 ? 's' : ''} vendu{hoveredPoint.sales !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-3 text-xs bg-slate-50 dark:bg-white/5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 animate-fade-in">
+            <span className="font-black text-[#0038A8] dark:text-[#4EED15]">{hoveredPoint.day} :</span>
+            <span className="font-semibold text-slate-900 dark:text-white">
+              {hoveredPoint.sales} billet{hoveredPoint.sales !== 1 ? 's' : ''}
+            </span>
             {hoveredPoint.revenue > 0 && (
-              <span className="text-on-surface-variant">({hoveredPoint.revenue.toLocaleString('fr-FR')} FCFA)</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                · {formatFCFA(hoveredPoint.revenue)}
+              </span>
             )}
           </div>
         ) : (
-          <p className="text-xs text-on-surface-variant italic">Survolez un point pour voir le détail journalier</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+            Survolez un point pour voir le détail journalier
+          </p>
         )}
       </div>
 
       {/* SVG Interactive Chart */}
       <div className="flex-1 relative w-full h-full flex items-end pb-8">
         {!hasData ? (
-          // État vide : afficher un placeholder
           <div className="absolute inset-0 flex items-center justify-center pb-8">
-            <div className="text-center space-y-2">
-              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/40">bar_chart</span>
-              <p className="text-xs text-on-surface-variant font-mono">Aucune donnée de vente</p>
-              <p className="text-[11px] text-on-surface-variant/70">Commencez par créer une vente au guichet ou en ligne</p>
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[32px] text-slate-300 dark:text-white/20">
+                  bar_chart
+                </span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Aucune donnée de vente</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                  Commencez par créer une vente au guichet ou en ligne
+                </p>
+              </div>
+              <Link
+                href="/events/new"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0038A8] text-white text-xs font-bold hover:bg-[#002D8C] transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px] text-[#4EED15]">add</span>
+                Créer un événement
+              </Link>
             </div>
           </div>
         ) : (
           <svg
-            className="w-full h-full text-primary absolute bottom-8 left-0 overflow-visible"
+            className="w-full h-full text-[#0038A8] dark:text-[#4EED15] absolute bottom-8 left-0 overflow-visible"
             preserveAspectRatio="none"
             viewBox="0 0 800 300"
           >
             <defs>
-              <linearGradient id="chartGradient" x1="0%" x2="0%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
+              <linearGradient id={GRADIENT_ID} x1="0%" x2="0%" y1="0%" y2="100%">
+                <stop offset="0%"   stopColor="currentColor" stopOpacity="0.20" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="0.00" />
               </linearGradient>
             </defs>
 
+            {/* Grille horizontale subtile */}
+            {[75, 150, 225].map((y) => (
+              <line
+                key={y}
+                x1="0" y1={y} x2="800" y2={y}
+                stroke="currentColor"
+                strokeOpacity="0.06"
+                strokeWidth="1"
+              />
+            ))}
+
             {/* Area Fill */}
-            <path d={areaPath} fill="url(#chartGradient)" />
+            <path d={areaPath} fill={`url(#${GRADIENT_ID})`} />
 
             {/* Line Curve */}
             <path
@@ -153,36 +199,56 @@ export const SalesChart = memo(function SalesChart() {
               stroke="currentColor"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth="4"
+              strokeWidth="3.5"
               className="transition-all duration-300"
             />
 
             {/* Interactive Circle Points */}
             {dataPoints.map((pt, idx) => (
               <g key={idx} className="cursor-pointer">
+                {/* Zone de hover agrandie (invisible) */}
                 <circle
                   cx={pt.cx}
                   cy={pt.cy}
-                  r={hoveredPoint?.day === pt.day ? 9 : 6}
-                  fill="white"
-                  stroke="currentColor"
-                  strokeWidth={hoveredPoint?.day === pt.day ? 4 : 3}
-                  className="transition-all duration-200"
+                  r={20}
+                  fill="transparent"
                   onMouseEnter={() => setHoveredPoint(pt)}
                   onMouseLeave={() => setHoveredPoint(null)}
                 />
+                <circle
+                  cx={pt.cx}
+                  cy={pt.cy}
+                  r={hoveredPoint?.day === pt.day ? 8 : 5}
+                  fill="white"
+                  stroke="currentColor"
+                  strokeWidth={hoveredPoint?.day === pt.day ? 3.5 : 2.5}
+                  className="transition-all duration-200 pointer-events-none"
+                />
+                {/* Halo sur point survolé */}
+                {hoveredPoint?.day === pt.day && (
+                  <circle
+                    cx={pt.cx}
+                    cy={pt.cy}
+                    r={16}
+                    fill="currentColor"
+                    fillOpacity="0.1"
+                    className="pointer-events-none"
+                  />
+                )}
               </g>
             ))}
           </svg>
         )}
 
         {/* Days Axis */}
-        <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs font-semibold text-on-surface-variant font-mono px-2">
+        <div className="absolute bottom-0 left-0 w-full flex justify-between text-[11px] font-bold text-slate-400 dark:text-slate-500 font-mono px-1">
           {dataPoints.map((pt) => (
             <span
               key={pt.day}
-              className={`transition-colors ${
-                hoveredPoint?.day === pt.day ? 'text-primary font-bold scale-110' : ''
+              className={`transition-all duration-200 ${
+                hoveredPoint?.day === pt.day
+                  ? 'text-[#0038A8] dark:text-[#4EED15] scale-110 font-black'
+                  : ''
               }`}
             >
               {pt.day}
