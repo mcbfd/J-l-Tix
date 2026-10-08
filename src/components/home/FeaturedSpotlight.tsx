@@ -145,7 +145,7 @@ export function FeaturedSpotlight() {
               </div>
 
               <Link
-                href={`/events/${featuredEvent.slug}`}
+                href={`/discover/${featuredEvent.slug}`}
                 className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#4EED15] hover:bg-[#42D40F] text-[#002D8C] font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-[#4EED15]/30 transition-transform active:scale-95 cursor-pointer"
               >
                 <TicketIcon className="w-5 h-5" />

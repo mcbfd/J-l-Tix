@@ -163,7 +163,7 @@ export function EventCatalog() {
                     </div>
 
                     <Link
-                      href={`/events/${evt.slug}`}
+                      href={`/discover/${evt.slug}`}
                       className="px-4 py-2 rounded-xl bg-[#0038A8] hover:bg-[#002D8C] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-transform active:scale-95"
                     >
                       <span>Réserver</span>

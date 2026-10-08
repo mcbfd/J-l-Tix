@@ -33,7 +33,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/events" className="hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors">
+                <Link href="/discover" className="hover:text-[#0038A8] dark:hover:text-[#4EED15] transition-colors">
                   Voir tous les événements
                 </Link>
               </li>

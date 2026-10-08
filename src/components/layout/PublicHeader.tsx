@@ -22,7 +22,7 @@ export function PublicHeader() {
           <Link
             href="/"
             className={`transition-colors py-1 relative ${
-              pathname === '/' || pathname === '/events'
+              pathname === '/' || pathname === '/discover'
                 ? 'text-[#0038A8] dark:text-[#4EED15] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#4EED15] after:rounded-full'
                 : 'text-slate-600 dark:text-slate-300 hover:text-[#0038A8] dark:hover:text-[#4EED15]'
             }`}
